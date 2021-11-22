@@ -76,6 +76,36 @@ public class DependencyGraphTACO implements DependencyGraph {
         }
     }
 
+    public void clearDependents(Ref delDep) {
+        assert (delDep.getRow() == delDep.getLastRow() &&
+                delDep.getColumn() == delDep.getLastColumn());
+
+        findOverlappingRefs(delDep).forEachRemaining(depRange -> {
+            findPrecs(depRange).forEach(precRangeWithMeta -> {
+                Ref precRange = precRangeWithMeta.getRef();
+                EdgeMeta edgeMeta = precRangeWithMeta.getEdgeMeta();
+                List<Pair<Ref, RefWithMeta>> newEdges =
+                        deleteOneCell(precRange, depRange, edgeMeta, delDep);
+                deleteMemEntry(precRange, depRange, edgeMeta);
+                newEdges.forEach(pair -> {
+                    Ref newPrec = pair.first;
+                    Ref newDep = pair.second.getRef();
+                    EdgeMeta newEdgeMeta = pair.second.getEdgeMeta();
+                    if (newDep.getType() == Ref.RefType.CELL) add(newPrec, newDep);
+                    else insertMemEntry(newPrec, newDep, newEdgeMeta);
+                });
+            });
+        });
+    }
+
+    public void addBatch(List<Pair<Ref, Ref>> edgeBatch) {
+        edgeBatch.forEach(oneEdge -> {
+            Ref prec = oneEdge.first;
+            Ref dep = oneEdge.second;
+            add(prec, dep);
+        });
+    }
+
     private void updateOneCompressEntry(CompressInfo selectedInfo) {
         if (selectedInfo.isDuplicate) return;
         deleteMemEntry(selectedInfo.candPrec, selectedInfo.candDep, selectedInfo.edgeMeta);
@@ -118,28 +148,6 @@ public class DependencyGraphTACO implements DependencyGraph {
 
         _rectToRef = _rectToRef.delete(prec, RefUtils.refToRect(prec));
         _rectToRef = _rectToRef.delete(dep, RefUtils.refToRect(dep));
-    }
-
-    public void clearDependents(Ref delDep) {
-        assert (delDep.getRow() == delDep.getLastRow() &&
-                delDep.getColumn() == delDep.getLastColumn());
-
-        findOverlappingRefs(delDep).forEachRemaining(depRange -> {
-            findPrecs(depRange).forEach(precRangeWithMeta -> {
-                Ref precRange = precRangeWithMeta.getRef();
-                EdgeMeta edgeMeta = precRangeWithMeta.getEdgeMeta();
-                List<Pair<Ref, RefWithMeta>> newEdges =
-                        deleteOneCell(precRange, depRange, edgeMeta, delDep);
-                deleteMemEntry(precRange, depRange, edgeMeta);
-                newEdges.forEach(pair -> {
-                    Ref newPrec = pair.first;
-                    Ref newDep = pair.second.getRef();
-                    EdgeMeta newEdgeMeta = pair.second.getEdgeMeta();
-                    if (newDep.getType() == Ref.RefType.CELL) add(newPrec, newDep);
-                    else insertMemEntry(newPrec, newDep, newEdgeMeta);
-                });
-            });
-        });
     }
 
     private Iterator<Ref> findOverlappingRefs(Ref updateRef) {
@@ -224,14 +232,6 @@ public class DependencyGraphTACO implements DependencyGraph {
         }
 
         return refList;
-    }
-
-    public void addBatch(List<Pair<Ref, Ref>> edgeBatch) {
-        edgeBatch.forEach(oneEdge -> {
-            Ref prec = oneEdge.first;
-            Ref dep = oneEdge.second;
-            add(prec, dep);
-        });
     }
 
     private Pair<Offset, Offset> computeOffset(Ref prec,

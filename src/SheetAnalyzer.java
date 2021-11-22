@@ -49,10 +49,14 @@ public class SheetAnalyzer {
         return tacoDepGraphs;
     }
 
-    public Ref getRefWithLongestDepPath() {
+    /* Return the cell that has the longest dependency chain
+    * */
+    public Ref getRefWithLongestDepChain() {
         return null;
     }
 
+    /* Return the cell that has the largest number of dependencies
+     * */
     public Ref getRefWithMostDeps() {
         return null;
     }
