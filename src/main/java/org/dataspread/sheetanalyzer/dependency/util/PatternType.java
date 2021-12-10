@@ -1,4 +1,4 @@
-package dependency.util;
+package org.dataspread.sheetanalyzer.dependency.util;
 
 public enum PatternType {
     TYPEZERO,  // Long chain, special case of TypeOne

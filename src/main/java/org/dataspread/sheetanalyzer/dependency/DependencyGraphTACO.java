@@ -1,18 +1,18 @@
-package dependency;
+package org.dataspread.sheetanalyzer.dependency;
 
 import com.github.davidmoten.rtree.Entry;
 import com.github.davidmoten.rtree.RTree;
 import com.github.davidmoten.rtree.geometry.Rectangle;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
-import dependency.util.*;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import util.Pair;
-import util.Ref;
+import org.dataspread.sheetanalyzer.dependency.util.*;
+import org.dataspread.sheetanalyzer.util.Pair;
+import org.dataspread.sheetanalyzer.util.Ref;
 
 import java.util.*;
 
-import static dependency.util.PatternTools.*;
+import static org.dataspread.sheetanalyzer.dependency.util.PatternTools.*;
 
 public class DependencyGraphTACO implements DependencyGraph {
 

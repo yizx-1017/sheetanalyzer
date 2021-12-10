@@ -1,4 +1,4 @@
-package util;
+package org.dataspread.sheetanalyzer.util;
 
 import java.util.Set;
 

@@ -1,10 +1,9 @@
-package dependency.util;
+package org.dataspread.sheetanalyzer.dependency.util;
 
 import com.github.davidmoten.rtree.geometry.Rectangle;
 import com.github.davidmoten.rtree.geometry.internal.RectangleFloat;
-import util.Ref;
-import util.RefImpl;
-import util.Pair;
+import org.dataspread.sheetanalyzer.util.Ref;
+import org.dataspread.sheetanalyzer.util.RefImpl;
 
 public class PatternTools {
     private final static int SHIFT_STEP = 1;
@@ -244,7 +243,7 @@ public class PatternTools {
         return new RefImpl(
                 prec.getBookName(),
                 prec.getSheetName(),
-                row, col, lastRow, lastCol);
+                row, col, lastRow, lastCol).getOverlap(dep);
     }
 
     public static Ref findUpdatePrecRef(Ref prec, Ref dep,
@@ -306,7 +305,7 @@ public class PatternTools {
         return new RefImpl(
                 prec.getBookName(),
                 prec.getSheetName(),
-                row, col, lastRow, lastCol);
+                row, col, lastRow, lastCol).getOverlap(prec);
     }
 
     public static Ref findLastPrec(Ref prec, Ref dep,

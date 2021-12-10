@@ -1,15 +1,19 @@
-import dependency.DependencyGraph;
-import dependency.DependencyGraphTACO;
-import dependency.util.RefWithMeta;
-import parser.POIParser;
-import parser.SpreadsheetParser;
-import util.Ref;
-import util.SheetData;
-import util.SheetNotSupportedException;
+package org.dataspread.sheetanalyzer;
+
+import org.dataspread.sheetanalyzer.dependency.DependencyGraph;
+import org.dataspread.sheetanalyzer.dependency.DependencyGraphTACO;
+import org.dataspread.sheetanalyzer.dependency.util.RefWithMeta;
+import org.dataspread.sheetanalyzer.parser.POIParser;
+import org.dataspread.sheetanalyzer.parser.SpreadsheetParser;
+import org.dataspread.sheetanalyzer.util.CellContent;
+import org.dataspread.sheetanalyzer.util.Ref;
+import org.dataspread.sheetanalyzer.util.SheetData;
+import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class SheetAnalyzer {
     private final SpreadsheetParser parser;
@@ -23,6 +27,27 @@ public class SheetAnalyzer {
         sheetDataMap = parser.getSheetData();
 
         depGraphMap = new HashMap<>();
+        genDepGraphFromSheetData(depGraphMap);
+    }
+
+    public SheetAnalyzer(String sheetName,
+                         HashMap<Ref, HashSet<Ref>> sheetDeps,
+                         HashMap<Ref, CellContent> sheetContent) {
+        parser = null;
+        fileName = "NoFile";
+
+        sheetDataMap = new HashMap<>();
+        SheetData sheetData = new SheetData(sheetName);
+        sheetDeps.forEach(sheetData::addDeps);
+        sheetContent.forEach(sheetData::addContent);
+        sheetDataMap.put(sheetName, sheetData);
+
+        depGraphMap = new HashMap<>();
+        genDepGraphFromSheetData(depGraphMap);
+
+    }
+
+    private void genDepGraphFromSheetData(HashMap<String, DependencyGraph> inputDepGraphMap) {
         boolean isRowWise = false;
         sheetDataMap.forEach((sheetName, sheetData) -> {
             DependencyGraph depGraph = new DependencyGraphTACO();
@@ -33,12 +58,16 @@ public class SheetAnalyzer {
                     depGraph.add(prec, dep);
                 });
             });
-            depGraphMap.put(sheetName, depGraph);
+            inputDepGraphMap.put(sheetName, depGraph);
         });
     }
 
     public HashMap<String, DependencyGraph> getDependencyGraphs() {
         return depGraphMap;
+    }
+
+    public Set<Ref> getDependents(String sheetName, Ref ref) {
+        return depGraphMap.get(sheetName).getDependents(ref);
     }
 
     public HashMap<String, HashMap<Ref, List<RefWithMeta>>> getTACODepGraphs() {
@@ -49,7 +78,7 @@ public class SheetAnalyzer {
         return tacoDepGraphs;
     }
 
-    /* Return the cell that has the longest dependency chain
+    /* Return the cell that has the longest org.dataspread.sheetanalyzer.dependency chain
     * */
     public Ref getRefWithLongestDepChain() {
         return null;

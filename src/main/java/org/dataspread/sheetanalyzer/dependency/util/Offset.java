@@ -1,4 +1,4 @@
-package dependency.util;
+package org.dataspread.sheetanalyzer.dependency.util;
 
 import java.util.Objects;
 

@@ -1,4 +1,4 @@
-package dependency.util;
+package org.dataspread.sheetanalyzer.dependency.util;
 
 public enum Direction {
     TODOWN,

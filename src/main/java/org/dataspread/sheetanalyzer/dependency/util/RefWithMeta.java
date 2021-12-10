@@ -1,6 +1,6 @@
-package dependency.util;
+package org.dataspread.sheetanalyzer.dependency.util;
 
-import util.Ref;
+import org.dataspread.sheetanalyzer.util.Ref;
 
 import java.util.Objects;
 

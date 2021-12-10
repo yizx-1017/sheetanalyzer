@@ -1,6 +1,6 @@
-package parser;
+package org.dataspread.sheetanalyzer.parser;
 
-import util.SheetData;
+import org.dataspread.sheetanalyzer.util.SheetData;
 
 import java.util.HashMap;
 

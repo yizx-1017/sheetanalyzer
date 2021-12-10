@@ -1,4 +1,4 @@
-package util;
+package org.dataspread.sheetanalyzer.util;
 
 public class Pair<T, E> {
 

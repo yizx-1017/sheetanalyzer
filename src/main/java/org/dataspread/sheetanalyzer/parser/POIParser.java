@@ -1,6 +1,5 @@
-package parser;
+package org.dataspread.sheetanalyzer.parser;
 
-import util.*;
 import org.apache.poi.hssf.usermodel.HSSFEvaluationWorkbook;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.formula.FormulaParser;
@@ -9,6 +8,7 @@ import org.apache.poi.ss.formula.FormulaRenderingWorkbook;
 import org.apache.poi.ss.formula.FormulaType;
 import org.apache.poi.ss.formula.ptg.*;
 import org.apache.poi.ss.usermodel.*;
+import org.dataspread.sheetanalyzer.util.*;
 
 import java.io.File;
 import java.util.HashMap;
@@ -31,6 +31,7 @@ public class POIParser implements SpreadsheetParser {
             this.evalbook = HSSFEvaluationWorkbook.create((HSSFWorkbook) workbook);
             parseSpreadsheet();
         } catch (Exception e) {
+            e.printStackTrace();
             throw new SheetNotSupportedException("Parsing " + filePath + " failed");
         }
 
@@ -70,8 +71,8 @@ public class POIParser implements SpreadsheetParser {
                         parseOneFormulaCell(sheetData, cell);
                     } else {
                         Ref dep = new RefImpl(cell.getRowIndex(), cell.getColumnIndex());
-                        CellContent cellContent = new CellContent(cell.getStringCellValue(),
-                                cell.getCellFormula(), false);
+                        CellContent cellContent = new CellContent(getCellContentString(cell),
+                                "", false);
                         sheetData.addContent(dep, cellContent);
                     }
                 }
@@ -80,6 +81,21 @@ public class POIParser implements SpreadsheetParser {
             if (row.getRowNum() > maxRows) maxRows = row.getRowNum();
         }
         return sheetData;
+    }
+
+    private String getCellContentString(Cell cell) {
+        switch (cell.getCellType()) {
+            case ERROR:
+                return String.valueOf(cell.getErrorCellValue());
+            case STRING:
+                return cell.getStringCellValue();
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            case NUMERIC:
+                return String.valueOf(cell.getNumericCellValue());
+            default:
+                return "";
+        }
     }
 
     private void parseOneFormulaCell(SheetData sheetData, Cell cell) throws SheetNotSupportedException {
@@ -96,7 +112,7 @@ public class POIParser implements SpreadsheetParser {
         }
         if (!precSet.isEmpty()) {
             sheetData.addDeps(dep, precSet);
-            CellContent cellContent = new CellContent(cell.getStringCellValue(),
+            CellContent cellContent = new CellContent("",
                     cell.getCellFormula(), true);
             sheetData.addContent(dep, cellContent);
         }
