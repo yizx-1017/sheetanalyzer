@@ -10,6 +10,7 @@ public class SheetData {
     private int maxCols;
 
     private final HashMap<Ref, HashSet<Ref>> sheetDeps = new HashMap<>();
+    private final HashMap<Ref, Integer> formulaNumRefs = new HashMap<>();
     private final HashMap<Ref, CellContent> sheetContent = new HashMap<>();
 
     public SheetData(String sheetName) {
@@ -40,11 +41,15 @@ public class SheetData {
         sheetDeps.put(dep, precSet);
     }
 
+    public void addFormulaNumRef(Ref dep, int numRefs) {
+        formulaNumRefs.put(dep, numRefs);
+    }
+
     public void addContent(Ref cellRef, CellContent cellContent) {
         sheetContent.put(cellRef, cellContent);
     }
 
-    public List<Pair<Ref, HashSet<Ref>>> getSortedDeps(boolean rowWise) {
+    public List<Pair<Ref, HashSet<Ref>>> getSortedDepPairs(boolean rowWise) {
         LinkedList<Pair<Ref, HashSet<Ref>>> depPairList = new LinkedList<>();
         sheetDeps.forEach((Ref dep, HashSet<Ref> precSet) -> {
             depPairList.add(new Pair<>(dep, precSet));
@@ -52,6 +57,10 @@ public class SheetData {
         if (rowWise) depPairList.sort(rowWiseComp);
         else depPairList.sort(colWiseComp);
         return depPairList;
+    }
+
+    public Set<Ref> getDepSet() {
+        return formulaNumRefs.keySet();
     }
 
     public void setMaxRowsCols(int maxRows, int maxCols) {
@@ -62,8 +71,12 @@ public class SheetData {
     public int getMaxRows() {return maxRows;}
     public int getMaxCols() {return maxCols;}
 
-    public HashSet<Ref> getPrecSet(Ref ref) {
-        return sheetDeps.get(ref);
+    public HashSet<Ref> getPrecSet(Ref dep) {
+        return sheetDeps.get(dep);
+    }
+
+    public int getNumRefs(Ref dep) {
+        return formulaNumRefs.get(dep);
     }
 
     public CellContent getCellContent(Ref ref) {

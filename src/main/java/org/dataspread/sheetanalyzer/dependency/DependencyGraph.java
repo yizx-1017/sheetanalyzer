@@ -11,4 +11,5 @@ public interface DependencyGraph {
  void add(Ref precedent, Ref dependent);
  void clearDependents(Ref dependent);
  void addBatch(List<Pair<Ref, Ref>> edgeBatch);
+ long getNumEdges();
 }

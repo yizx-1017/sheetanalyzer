@@ -1,4 +1,4 @@
-package org.dataspread.sheetanalyzer.TACOTest;
+package org.dataspread.sheetanalyzer.tacoTest;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
@@ -11,7 +11,7 @@ import org.dataspread.sheetanalyzer.util.RefImpl;
 import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import util.TestUtil;
+import org.dataspread.sheetanalyzer.util.TestUtil;
 import org.dataspread.sheetanalyzer.SheetAnalyzer;
 import org.junit.jupiter.api.Test;
 
@@ -54,7 +54,8 @@ public class TestRRPattern {
     @BeforeAll
     public static void setUp() throws IOException, SheetNotSupportedException {
         File xlsTempFile = createRRSheet();
-        sheetAnalyzer = new SheetAnalyzer(xlsTempFile.getAbsolutePath());
+        boolean inRowCompression = false;
+        sheetAnalyzer = new SheetAnalyzer(xlsTempFile.getAbsolutePath(), inRowCompression);
     }
 
     @Test

@@ -11,6 +11,7 @@ import org.dataspread.sheetanalyzer.util.Pair;
 import org.dataspread.sheetanalyzer.util.Ref;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.dataspread.sheetanalyzer.dependency.util.PatternTools.*;
 
@@ -21,7 +22,10 @@ public class DependencyGraphTACO implements DependencyGraph {
     protected HashMap<Ref, List<RefWithMeta>> depToPrecList = new HashMap<>();
     private RTree<Ref, Rectangle> _rectToRef = RTree.create();
 
-    private CompressInfoComparator compressInfoComparator = new CompressInfoComparator();
+    private boolean doCompression = true;
+    private boolean inRowCompression = false;
+
+    private final CompressInfoComparator compressInfoComparator = new CompressInfoComparator();
 
     public HashMap<Ref, List<RefWithMeta>> getCompressedGraph() {
         return precToDepList;
@@ -63,9 +67,18 @@ public class DependencyGraphTACO implements DependencyGraph {
         return result.stream().anyMatch(ref -> isSubsume(ref, input));
     }
 
+    public long getNumEdges() {
+        AtomicLong numEdges = new AtomicLong(0);
+        depToPrecList.forEach((dep, precSet) -> {
+            numEdges.addAndGet(precSet.size());
+        });
+        return numEdges.get();
+    }
 
     public void add(Ref precedent, Ref dependent) {
-        LinkedList<CompressInfo> compressInfoList = findCompressInfo(precedent, dependent);
+        LinkedList<CompressInfo> compressInfoList = new LinkedList<>();
+        if (doCompression)
+            compressInfoList = findCompressInfo(precedent, dependent);
         if (compressInfoList.isEmpty()) {
             insertMemEntry(precedent, dependent,
                     new EdgeMeta(PatternType.NOTYPE, Offset.noOffset, Offset.noOffset));
@@ -104,6 +117,14 @@ public class DependencyGraphTACO implements DependencyGraph {
             Ref dep = oneEdge.second;
             add(prec, dep);
         });
+    }
+
+    public void setInRowCompression(boolean inRowCompression) {
+        this.inRowCompression = inRowCompression;
+    }
+
+    public void setDoCompression(boolean doCompression) {
+        this.doCompression = doCompression;
     }
 
     private void updateOneCompressEntry(CompressInfo selectedInfo) {
@@ -245,6 +266,12 @@ public class DependencyGraphTACO implements DependencyGraph {
             case TYPEZERO:
             case TYPEONE:
             case TYPEFIVE:
+            case TYPESIX:
+            case TYPESEVEN:
+            case TYPEEIGHT:
+            case TYPENINE:
+            case TYPETEN:
+            case TYPEELEVEN:
                 startOffset = RefUtils.refToOffset(prec, dep, true);
                 endOffset = RefUtils.refToOffset(prec, dep, false);
                 break;
@@ -264,9 +291,10 @@ public class DependencyGraphTACO implements DependencyGraph {
         return new Pair<>(startOffset, endOffset);
     }
 
-    private CompressInfo findCompressionPatternGapOne(Ref prec, Ref dep,
-                                                      Ref candPrec, Ref candDep, EdgeMeta metaData) {
-        if (dep.getColumn() == candDep.getColumn() && candDep.getLastRow() - dep.getRow() == -2) {
+    private CompressInfo findCompressionPatternWithGap(Ref prec, Ref dep,
+                                                       Ref candPrec, Ref candDep, EdgeMeta metaData,
+                                                       int gapSize, PatternType patternType) {
+        if (dep.getColumn() == candDep.getColumn() && candDep.getLastRow() - dep.getRow() == -(gapSize + 1)) {
             if (metaData.patternType == PatternType.NOTYPE) {
                 Offset offsetStartA = RefUtils.refToOffset(prec, dep, true);
                 Offset offsetStartB = RefUtils.refToOffset(candPrec, candDep, true);
@@ -276,20 +304,20 @@ public class DependencyGraphTACO implements DependencyGraph {
 
                 if (offsetStartA.equals(offsetStartB) &&
                         offsetEndA.equals(offsetEndB)) {
-                    return new CompressInfo(false, Direction.TODOWN, PatternType.TYPEFIVE,
+                    return new CompressInfo(false, Direction.TODOWN, patternType,
                             prec, dep, candPrec, candDep, metaData);
                 }
-            } else if (metaData.patternType == PatternType.TYPEFIVE) {
+            } else if (metaData.patternType == patternType) {
                 Offset offsetStartA = RefUtils.refToOffset(prec, dep, true);
                 Offset offsetEndA = RefUtils.refToOffset(prec, dep, false);
 
                 if (offsetStartA.equals(metaData.startOffset) &&
                         offsetEndA.equals(metaData.endOffset)) {
-                    return new CompressInfo(false, Direction.TODOWN, PatternType.TYPEFIVE,
+                    return new CompressInfo(false, Direction.TODOWN, patternType,
                             prec, dep, candPrec, candDep, metaData);
                 }
             }
-        } else if (dep.getRow() == candDep.getRow() && candDep.getLastColumn() - dep.getColumn() == -2) {
+        } else if (dep.getRow() == candDep.getRow() && candDep.getLastColumn() - dep.getColumn() == -(gapSize + 1)) {
             if (metaData.patternType == PatternType.NOTYPE) {
                 Offset offsetStartA = RefUtils.refToOffset(prec, dep, true);
                 Offset offsetStartB = RefUtils.refToOffset(candPrec, candDep, true);
@@ -299,16 +327,16 @@ public class DependencyGraphTACO implements DependencyGraph {
 
                 if (offsetStartA.equals(offsetStartB) &&
                         offsetEndA.equals(offsetEndB)) {
-                    return new CompressInfo(false, Direction.TORIGHT, PatternType.TYPEFIVE,
+                    return new CompressInfo(false, Direction.TORIGHT, patternType,
                             prec, dep, candPrec, candDep, metaData);
                 }
-            } else if (metaData.patternType == PatternType.TYPEFIVE) {
+            } else if (metaData.patternType == patternType) {
                 Offset offsetStartA = RefUtils.refToOffset(prec, dep, true);
                 Offset offsetEndA = RefUtils.refToOffset(prec, dep, false);
 
                 if (offsetStartA.equals(metaData.startOffset) &&
                         offsetEndA.equals(metaData.endOffset)) {
-                    return new CompressInfo(false, Direction.TORIGHT, PatternType.TYPEFIVE,
+                    return new CompressInfo(false, Direction.TORIGHT, patternType,
                             prec, dep, candPrec, candDep, metaData);
                 }
             }
@@ -327,14 +355,23 @@ public class DependencyGraphTACO implements DependencyGraph {
             });
         });
 
-        if (compressInfoList.isEmpty()) {
-            findOverlapAndAdjacency(dep).forEach(candDep -> {
-                findPrecs(candDep).forEach(candPrecWithMeta -> {
-                    CompressInfo compRes = findCompressionPatternGapOne(prec, dep,
-                            candPrecWithMeta.getRef(), candDep, candPrecWithMeta.getEdgeMeta());
-                    addToCompressionInfoList(compressInfoList, compRes);
-                });
-            });
+        if (!inRowCompression) {
+            for (int i = 0; i < PatternType.NOTYPE.ordinal()
+                    - PatternType.TYPEFIVE.ordinal(); i++) {
+                int gapSize = i + 1;
+                PatternType patternType =
+                        PatternType.values()[PatternType.TYPEFIVE.ordinal() + i];
+                if (compressInfoList.isEmpty()) {
+                    findOverlapAndAdjacency(dep).forEach(candDep -> {
+                        findPrecs(candDep).forEach(candPrecWithMeta -> {
+                            CompressInfo compRes = findCompressionPatternWithGap(prec, dep,
+                                    candPrecWithMeta.getRef(), candDep,
+                                    candPrecWithMeta.getEdgeMeta(), gapSize, patternType);
+                            addToCompressionInfoList(compressInfoList, compRes);
+                        });
+                    });
+                }
+            }
         }
 
         return compressInfoList;
@@ -361,7 +398,10 @@ public class DependencyGraphTACO implements DependencyGraph {
         // Otherwise, find the compression type
         // Guarantee the adjacency
         Direction direction = findAdjacencyDirection(dep, candDep);
-        if (direction == Direction.NODIRECTION) {
+        if (direction == Direction.NODIRECTION ||
+                (inRowCompression &&
+                        (direction == Direction.TOLEFT ||
+                                direction == Direction.TORIGHT))) {
             return new CompressInfo(false, Direction.NODIRECTION, PatternType.NOTYPE,
                     prec, dep, candPrec, candDep, metaData);
         }

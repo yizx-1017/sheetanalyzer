@@ -31,7 +31,7 @@ public class POIParser implements SpreadsheetParser {
             this.evalbook = HSSFEvaluationWorkbook.create((HSSFWorkbook) workbook);
             parseSpreadsheet();
         } catch (Exception e) {
-            e.printStackTrace();
+            // e.printStackTrace();
             throw new SheetNotSupportedException("Parsing " + filePath + " failed");
         }
 
@@ -102,16 +102,21 @@ public class POIParser implements SpreadsheetParser {
         Ptg[] tokens = this.getTokens(cell);
         Ref dep = new RefImpl(cell.getRowIndex(), cell.getColumnIndex());
         HashSet<Ref> precSet = new HashSet<>();
+        int numRefs = 0;
         if (tokens != null) {
             for (Ptg token : tokens) {
                 if (token instanceof OperandPtg) {
                     Ref prec = parseOneToken(cell, (OperandPtg) token);
-                    if (prec != null) precSet.add(prec);
+                    if (prec != null) {
+                        numRefs += 1;
+                        precSet.add(prec);
+                    }
                 }
             }
         }
         if (!precSet.isEmpty()) {
             sheetData.addDeps(dep, precSet);
+            sheetData.addFormulaNumRef(dep, numRefs);
             CellContent cellContent = new CellContent("",
                     cell.getCellFormula(), true);
             sheetData.addContent(dep, cellContent);
