@@ -25,7 +25,7 @@ public class TestSheetAnalyzer {
             System.exit(-1);
         }
 
-        boolean inRowCompression = false;
+        boolean inRowCompression = true;
         HashMap<Integer, Long> numRefDist = new HashMap<>();
         List<Long> numFormulae = new LinkedList<>();
         List<String> fileName = new LinkedList<>();
@@ -75,7 +75,7 @@ public class TestSheetAnalyzer {
 
             for (int i = 0; i < numFormulae.size(); i++) {
                 formPW.write(fileName.get(i) + "," + numFormulae.get(i) + "\n");
-                if (numEdges.get(i) >= 10) edgePW.write(fileName.get(i) + "," + numCompEdges.get(i) + "\n");
+                if (numEdges.get(i) >= 10) edgePW.write(fileName.get(i) + "," + numCompEdges.get(i) + "," + numEdges.get(i) + "\n");
             }
 
         } catch (IOException e) {

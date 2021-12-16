@@ -8,6 +8,8 @@ import org.apache.poi.ss.formula.FormulaRenderingWorkbook;
 import org.apache.poi.ss.formula.FormulaType;
 import org.apache.poi.ss.formula.ptg.*;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFEvaluationWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.dataspread.sheetanalyzer.util.*;
 
 import java.io.File;
@@ -28,7 +30,12 @@ public class POIParser implements SpreadsheetParser {
 
         try {
             this.workbook = WorkbookFactory.create(fileItem);
-            this.evalbook = HSSFEvaluationWorkbook.create((HSSFWorkbook) workbook);
+            if (workbook instanceof HSSFWorkbook) {
+                this.evalbook = HSSFEvaluationWorkbook.create((HSSFWorkbook) workbook);
+            } else if (workbook instanceof XSSFWorkbook) {
+                this.evalbook = XSSFEvaluationWorkbook.create((XSSFWorkbook) workbook);
+            }
+
             parseSpreadsheet();
         } catch (Exception e) {
             // e.printStackTrace();

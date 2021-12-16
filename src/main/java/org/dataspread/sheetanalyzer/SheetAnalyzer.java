@@ -19,7 +19,7 @@ public class SheetAnalyzer {
     private final String fileName;
     private final HashMap<String, SheetData> sheetDataMap;
     private final HashMap<String, DependencyGraph> depGraphMap;
-    private boolean inRowCompression = true;
+    private final boolean inRowCompression;
     private long numEdges = 0;
 
     public SheetAnalyzer(String filePath,
