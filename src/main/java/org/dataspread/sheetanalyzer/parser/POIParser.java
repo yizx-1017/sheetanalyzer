@@ -34,6 +34,8 @@ public class POIParser implements SpreadsheetParser {
                 this.evalbook = HSSFEvaluationWorkbook.create((HSSFWorkbook) workbook);
             } else if (workbook instanceof XSSFWorkbook) {
                 this.evalbook = XSSFEvaluationWorkbook.create((XSSFWorkbook) workbook);
+            } else {
+                throw new SheetNotSupportedException();
             }
 
             parseSpreadsheet();
