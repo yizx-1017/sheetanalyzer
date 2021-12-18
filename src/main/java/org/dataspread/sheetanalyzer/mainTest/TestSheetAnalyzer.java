@@ -41,6 +41,9 @@ public class TestSheetAnalyzer {
         if (directoryListing != null) {
             int counter = 0;
             for (File file: directoryListing) {
+                counter += 1;
+                System.out.println("[" + counter + "/" +
+                        directoryListing.length + "]: "+ "processing " + file.getName());
                 String xlsPath = file.getAbsolutePath();
                 try {
                     SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(xlsPath, inRowCompression);
@@ -59,9 +62,6 @@ public class TestSheetAnalyzer {
                 } catch (SheetNotSupportedException ignored) {
 
                 }
-                counter += 1;
-                System.out.println("[" + counter + "/" +
-                        directoryListing.length + "]: "+ file.getName() + " finished");
             }
         }
 
@@ -79,7 +79,7 @@ public class TestSheetAnalyzer {
 
             for (int i = 0; i < numFormulae.size(); i++) {
                 formPW.write(fileName.get(i) + "," + numFormulae.get(i) + "\n");
-                if (numEdges.get(i) >= 1) {
+                if (numEdges.get(i) >= 10) {
                     edgePW.write(fileName.get(i) + ","
                             + numCompEdges.get(i) + ","
                             + numEdges.get(i) + ","

@@ -115,7 +115,7 @@ public class POIParser implements SpreadsheetParser {
         if (tokens != null) {
             for (Ptg token : tokens) {
                 if (token instanceof OperandPtg) {
-                    Ref prec = parseOneToken(cell, (OperandPtg) token);
+                    Ref prec = parseOneToken(cell, (OperandPtg) token, sheetData);
                     if (prec != null) {
                         numRefs += 1;
                         precSet.add(prec);
@@ -126,13 +126,14 @@ public class POIParser implements SpreadsheetParser {
         if (!precSet.isEmpty()) {
             sheetData.addDeps(dep, precSet);
             sheetData.addFormulaNumRef(dep, numRefs);
-            CellContent cellContent = new CellContent("",
-                    cell.getCellFormula(), true);
-            sheetData.addContent(dep, cellContent);
         }
+        CellContent cellContent = new CellContent("",
+                cell.getCellFormula(), true);
+        sheetData.addContent(dep, cellContent);
     }
 
-    private Ref parseOneToken(Cell cell, OperandPtg token) throws SheetNotSupportedException {
+    private Ref parseOneToken(Cell cell, OperandPtg token,
+                              SheetData sheetData) throws SheetNotSupportedException {
         Sheet sheet = this.getDependentSheet(cell, token);
         if (sheet != null) {
             if (token instanceof Area2DPtgBase) {
@@ -141,20 +142,33 @@ public class POIParser implements SpreadsheetParser {
                 int colStart = ptg.getFirstColumn();
                 int rowEnd = ptg.getLastRow();
                 int colEnd = ptg.getLastColumn();
-                boolean validArea = true;
-                for (int r = ptg.getFirstRow(); r <= ptg.getLastRow(); r++) {
-                    for (int c = ptg.getFirstColumn(); c <= ptg.getLastColumn(); c++) {
-                        Cell dep = this.getCellAt(sheet, r, c);
-                        if (dep == null) validArea = false;
+                Ref areaRef = new RefImpl(rowStart, colStart, rowEnd, colEnd);
+                if (!sheetData.areaAccessed(areaRef)) {
+                    sheetData.addOneAccess(areaRef);
+                    for (int r = ptg.getFirstRow(); r <= ptg.getLastRow(); r++) {
+                        for (int c = ptg.getFirstColumn(); c <= ptg.getLastColumn(); c++) {
+                            Cell dep = this.getCellAt(sheet, r, c);
+                            if (dep == null) {
+                                Ref cellRef = new RefImpl(r, c);
+                                if (sheetData.getCellContent(cellRef) == null) {
+                                    sheetData.addContent(cellRef,
+                                            CellContent.getNullCellContent());
+                                }
+                            }
+                        }
                     }
                 }
-                if (validArea) return new RefImpl(rowStart, colStart, rowEnd, colEnd);
+                return areaRef;
             } else if (token instanceof RefPtg) {
                 RefPtg ptg = (RefPtg) token;
                 int row = ptg.getRow();
                 int col = ptg.getColumn();
                 Cell dep = this.getCellAt(sheet, row, col);
-                if (dep != null) return new RefImpl(row, col, row, col);
+                if (dep == null) {
+                    sheetData.addContent(new RefImpl(row, col),
+                            CellContent.getNullCellContent());
+                }
+                return new RefImpl(row, col, row, col);
             } else if (token instanceof Area3DPtg ||
                     token instanceof Area3DPxg ||
                     token instanceof Ref3DPtg ||

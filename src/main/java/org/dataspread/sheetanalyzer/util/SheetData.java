@@ -12,6 +12,7 @@ public class SheetData {
     private final HashMap<Ref, HashSet<Ref>> sheetDeps = new HashMap<>();
     private final HashMap<Ref, Integer> formulaNumRefs = new HashMap<>();
     private final HashMap<Ref, CellContent> sheetContent = new HashMap<>();
+    private final HashSet<Ref> accessAreaCache = new HashSet<>();
 
     public SheetData(String sheetName) {
         this.sheetName = sheetName;
@@ -49,6 +50,14 @@ public class SheetData {
         sheetContent.put(cellRef, cellContent);
     }
 
+    public void addOneAccess(Ref areaRef) {
+        accessAreaCache.add(areaRef);
+    }
+
+    public boolean areaAccessed(Ref areaRef) {
+        return accessAreaCache.contains(areaRef);
+    }
+
     public List<Pair<Ref, HashSet<Ref>>> getSortedDepPairs(boolean rowWise) {
         LinkedList<Pair<Ref, HashSet<Ref>>> depPairList = new LinkedList<>();
         sheetDeps.forEach((Ref dep, HashSet<Ref> precSet) -> {
@@ -65,9 +74,15 @@ public class SheetData {
 
     public Set<Ref> getValueOnlyPrecSet() {
         Set<Ref> valueOnlyPrecSet = new HashSet<>();
+        Set<Ref> areaSet = new HashSet<>();
 
         sheetDeps.forEach((Ref dep, Set<Ref> precSet) -> {
-            precSet.forEach(prec -> valueOnlyPrecSet.addAll(toCellSet(prec)));
+            precSet.forEach(prec -> {
+                if (!areaSet.contains(prec)) {
+                    areaSet.add(prec);
+                    valueOnlyPrecSet.addAll(toCellSet(prec));
+                }
+            });
         });
 
         return valueOnlyPrecSet;
@@ -79,7 +94,7 @@ public class SheetData {
             for (int col = ref.getColumn(); col <= ref.getLastColumn(); col++) {
                 Ref cellRef = new RefImpl(row, col);
                 CellContent cc = sheetContent.get(cellRef);
-                if (cc != null && !cc.isFormula)
+                if (!cc.isFormula)
                     cellSet.add(cellRef);
             }
         }

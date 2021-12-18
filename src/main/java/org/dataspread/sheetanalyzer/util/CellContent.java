@@ -22,4 +22,8 @@ public class CellContent {
     public boolean isFormula() {
         return isFormula;
     }
+
+    public static CellContent getNullCellContent() {
+        return new CellContent("", "", false);
+    }
 }

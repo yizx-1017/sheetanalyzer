@@ -190,14 +190,44 @@ public class RefImpl implements Ref, Serializable {
 		return _type == other.getType();
 	}
 
+	private String fromNumToAlphabet(int i) {
+		return i >= 0 && i < 26 ? String.valueOf((char)(i + 65)) : Integer.toString(i);
+    }
+
+	private String genColumnLabel(int column) {
+		int remaining = column;
+		int digit = 1;
+		StringBuilder colLabel = new StringBuilder();
+		while (Math.pow(26, digit) < remaining + 1) {
+			remaining = remaining - digit * 26;
+			digit++;
+		}
+		for (int i = 0; i < digit; i++) {
+			int cur = remaining % 26;
+			remaining = remaining / 26;
+			colLabel.append(fromNumToAlphabet(cur));
+		}
+		return colLabel.reverse().toString();
+	}
+
+	private String genCellString(int row, int column) {
+		return genColumnLabel(column) + (row + 1);
+	}
+
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		switch (_type) {
 		case AREA:
-			sb.insert(0,":( "+ _lastRow + " , " + _lastColumn + ")");
+			sb.insert(0, "(" + genCellString(_row, _column)  +
+					":" + genCellString(_lastRow, _lastColumn) + ")");
+			break;
+			// sb.insert(0,":( "+ _lastRow + " , " + _lastColumn + ")");
 		case CELL:
-			sb.insert(0, ":( "+ _row + " , " + _column + ")");
+			sb.insert(0, genCellString(_row, _column));
+			break;
+			// sb.insert(0, ":( "+ _row + " , " + _column + ")");
 		case SHEET:
 			if(lastSheetName != null) {
 				sb.insert(0, sheetName + ":" + lastSheetName + "!");
@@ -217,7 +247,7 @@ public class RefImpl implements Ref, Serializable {
 		case TABLE: //ZSS-960
 		}
 
-		sb.insert(0, bookName + ":");
+		sb.insert(0, sheetName + ":");
 		return sb.toString();
 	}
 

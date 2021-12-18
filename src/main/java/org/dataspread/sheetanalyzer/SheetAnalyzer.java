@@ -22,6 +22,7 @@ public class SheetAnalyzer {
     private final HashMap<String, DependencyGraph> depGraphMap;
     private final boolean inRowCompression;
     private long numEdges = 0;
+    private long maxNumQueries = 100000;
 
     public SheetAnalyzer(String filePath,
                          boolean inRowCompression) throws SheetNotSupportedException {
@@ -130,7 +131,8 @@ public class SheetAnalyzer {
         sheetDataMap.forEach((String sheetName, SheetData sheetData) -> {
             DependencyGraph depGraph = depGraphMap.get(sheetName);
             Set<Ref> valueOnlyPrecSet = sheetData.getValueOnlyPrecSet();
-            valueOnlyPrecSet.forEach(cellRef -> {
+            int numQueries = 0;
+            for (Ref cellRef : valueOnlyPrecSet) {
                 AtomicLong numDeps = new AtomicLong(0L);
                 depGraph.getDependents(cellRef).forEach(depRef -> {
                     numDeps.addAndGet(depRef.getCellCount());
@@ -140,7 +142,9 @@ public class SheetAnalyzer {
                     retRef.set(cellRef);
                     maxNumDeps.set(numDeps.get());
                 }
-            });
+                numQueries++;
+                if (numQueries >= maxNumQueries) break;
+            }
         });
         return new Pair<>(retRef.get(), maxNumDeps.get());
     }
