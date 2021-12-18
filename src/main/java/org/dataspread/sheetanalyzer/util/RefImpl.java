@@ -77,6 +77,10 @@ public class RefImpl implements Ref, Serializable {
 		this._lastColumn = lastColumn;
 	}
 
+	public void setSheetName(String sheetName) {
+		this.sheetName = sheetName;
+	}
+
 	@Override
 	public RefType getType() {
 		return _type;

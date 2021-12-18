@@ -63,6 +63,29 @@ public class SheetData {
         return formulaNumRefs.keySet();
     }
 
+    public Set<Ref> getValueOnlyPrecSet() {
+        Set<Ref> valueOnlyPrecSet = new HashSet<>();
+
+        sheetDeps.forEach((Ref dep, Set<Ref> precSet) -> {
+            precSet.forEach(prec -> valueOnlyPrecSet.addAll(toCellSet(prec)));
+        });
+
+        return valueOnlyPrecSet;
+    }
+
+    private Set<Ref> toCellSet(Ref ref) {
+        Set<Ref> cellSet = new HashSet<>();
+        for (int row = ref.getRow(); row <= ref.getLastRow(); row++) {
+            for (int col = ref.getColumn(); col <= ref.getLastColumn(); col++) {
+                Ref cellRef = new RefImpl(row, col);
+                CellContent cc = sheetContent.get(cellRef);
+                if (cc != null && !cc.isFormula)
+                    cellSet.add(cellRef);
+            }
+        }
+        return cellSet;
+    }
+
     public void setMaxRowsCols(int maxRows, int maxCols) {
         this.maxRows = maxRows;
         this.maxCols = maxCols;

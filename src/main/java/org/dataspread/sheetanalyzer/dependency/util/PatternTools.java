@@ -5,6 +5,9 @@ import com.github.davidmoten.rtree.geometry.internal.RectangleFloat;
 import org.dataspread.sheetanalyzer.util.Ref;
 import org.dataspread.sheetanalyzer.util.RefImpl;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class PatternTools {
     private final static int SHIFT_STEP = 1;
     private final static int FIRST_ROW = 0;
@@ -185,8 +188,9 @@ public class PatternTools {
         return findAdjacencyDirection(adjRef, ref) != Direction.NODIRECTION;
     }
 
-    public static Ref findUpdateDepRef(Ref prec, Ref dep,
+    public static Set<Ref> findUpdateDepRef(Ref prec, Ref dep,
                                        EdgeMeta edgeMeta, Ref precRange) {
+        Set<Ref> retSet = new HashSet<>();
         int row = -1;
         int col = -1;
         int lastRow = -1;
@@ -209,10 +213,22 @@ public class PatternTools {
 
         switch (patternType) {
             case TYPEONE: // relative start, relative end
+            case TYPEFIVE:
+            case TYPESIX:
+            case TYPESEVEN:
+            case TYPEEIGHT:
+            case TYPENINE:
+            case TYPETEN:
+            case TYPEELEVEN:
                 row = precRange.getRow() + startRowOffset;
                 col = precRange.getColumn() + startColOffset;
                 lastRow = precRange.getLastRow() + endRowOffset;
                 lastCol = precRange.getLastColumn() + endColOffset;
+                if (patternType != PatternType.TYPEONE) {
+                    int gapSize = patternType.ordinal() - PatternType.TYPEFIVE.ordinal() + 1;
+                    retSet = findRefSetForGapType(prec.getBookName(), prec.getSheetName(),
+                            row, col, lastRow, lastCol, gapSize);
+                }
                 break;
 
             case TYPETWO: // relative start, fixed end
@@ -240,10 +256,34 @@ public class PatternTools {
 
         assert edgeMeta.patternType != PatternType.NOTYPE || (row == lastRow && col == lastCol);
 
-        return new RefImpl(
-                prec.getBookName(),
-                prec.getSheetName(),
-                row, col, lastRow, lastCol).getOverlap(dep);
+        if (retSet.isEmpty()) {
+            retSet.add(new RefImpl(
+                    prec.getBookName(),
+                    prec.getSheetName(),
+                    row, col, lastRow, lastCol).getOverlap(dep));
+        }
+
+        return retSet;
+    }
+
+    public static Set<Ref> findRefSetForGapType(String bookName,
+                                                String sheetName,
+                                                int row, int col,
+                                                int lastRow, int lastCol,
+                                                int gapSize) {
+        Set<Ref> refSet = new HashSet<>();
+        if (row == lastRow) {
+            for (int colVar = col; colVar <= lastCol; colVar += (gapSize + 1)) {
+                refSet.add(new RefImpl(bookName, sheetName, row, colVar));
+            }
+        } else if (col == lastCol) {
+            for (int rowVar = row; rowVar <= lastRow; rowVar += (gapSize + 1)) {
+                refSet.add(new RefImpl(bookName, sheetName, rowVar, col));
+            }
+        } else {
+            assert(false);
+        }
+        return refSet;
     }
 
     public static Ref findUpdatePrecRef(Ref prec, Ref dep,
@@ -306,6 +346,39 @@ public class PatternTools {
                 prec.getBookName(),
                 prec.getSheetName(),
                 row, col, lastRow, lastCol).getOverlap(prec);
+    }
+
+    public static Ref findValidGapRef(Ref ref, Ref subRef, int gapSize) {
+        int newRow = -1, newCol = -1, newLastRow = -1, newLastCol = -1;
+        if (ref.getRow() == ref.getLastRow()) {
+            newRow = newLastRow = ref.getRow();
+            newCol = findFirstMatch(ref.getColumn(), subRef.getColumn(), gapSize);
+            newLastCol = findLastMatch(ref.getLastColumn(), subRef.getLastColumn(), gapSize);
+            if (newCol > newLastCol) newCol = -1;
+        } else if (ref.getColumn() == ref.getLastColumn()) {
+            newCol = newLastCol = ref.getColumn();
+            newRow = findFirstMatch(ref.getRow(), subRef.getRow(), gapSize);
+            newLastRow = findLastMatch(ref.getLastRow(), subRef.getLastRow(), gapSize);
+            if (newRow > newLastRow) newRow = -1;
+        } else {
+            assert false;
+        }
+        if (newRow == -1 || newCol == -1 || newLastRow == -1 || newLastCol == -1) {
+            return null;
+        } else {
+            return new RefImpl(ref.getBookName(), ref.getSheetName(),
+                    newRow, newCol, newLastRow, newLastCol);
+        }
+    }
+
+    private static int findFirstMatch(int start, int subStart, int gapSize) {
+        int div = (subStart - start + gapSize - 1)/gapSize;
+        return start + div * gapSize;
+    }
+
+    private static int findLastMatch(int end, int subEnd, int gapSize) {
+        int div = (end - subEnd + gapSize - 1)/gapSize;
+        return end - div * gapSize;
     }
 
     public static Ref findLastPrec(Ref prec, Ref dep,

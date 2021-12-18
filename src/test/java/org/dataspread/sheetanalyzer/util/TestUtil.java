@@ -1,5 +1,7 @@
 package org.dataspread.sheetanalyzer.util;
 
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.dataspread.sheetanalyzer.util.Ref;
 
 import java.io.File;
@@ -44,5 +46,12 @@ public class TestUtil {
 
     public static boolean hasSameRefs(Set<Ref> setA, Set<Ref> setB) {
         return setA.containsAll(setB) && setB.containsAll(setA);
+    }
+
+    public static void createAnEmptyRowWithTwoCols(Sheet sheet, int rowNum,
+                                                   int colA, int colB) {
+        Row row = sheet.createRow(rowNum);
+        row.createCell(colA);
+        row.createCell(colB);
     }
 }

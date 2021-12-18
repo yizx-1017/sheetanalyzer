@@ -7,6 +7,8 @@ public interface Ref {
 
 	String getBookName();
 
+	void setSheetName(String sheetName);
+
 	String getSheetName();
 
 	String getLastSheetName();

@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class SheetAnalyzer {
     private final SpreadsheetParser parser;
@@ -123,8 +124,25 @@ public class SheetAnalyzer {
 
     /* Return the cell that has the largest number of dependencies
      * */
-    public Ref getRefWithMostDeps() {
-        return null;
+    public Pair<Ref, Long> getRefWithMostDeps() {
+        AtomicReference<Ref> retRef = new AtomicReference<>(null);
+        AtomicLong maxNumDeps = new AtomicLong(0L);
+        sheetDataMap.forEach((String sheetName, SheetData sheetData) -> {
+            DependencyGraph depGraph = depGraphMap.get(sheetName);
+            Set<Ref> valueOnlyPrecSet = sheetData.getValueOnlyPrecSet();
+            valueOnlyPrecSet.forEach(cellRef -> {
+                AtomicLong numDeps = new AtomicLong(0L);
+                depGraph.getDependents(cellRef).forEach(depRef -> {
+                    numDeps.addAndGet(depRef.getCellCount());
+                });
+                if (numDeps.get() > maxNumDeps.get()) {
+                    cellRef.setSheetName(sheetName);
+                    retRef.set(cellRef);
+                    maxNumDeps.set(numDeps.get());
+                }
+            });
+        });
+        return new Pair<>(retRef.get(), maxNumDeps.get());
     }
 
     public boolean includeDerivedColumnOnly () {

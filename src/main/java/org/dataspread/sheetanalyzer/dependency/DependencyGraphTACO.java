@@ -49,15 +49,16 @@ public class DependencyGraphTACO implements DependencyGraph {
             Iterator<Ref> refIter = findOverlappingRefs(updateRef);
             while (refIter.hasNext()) {
                 Ref precRef = refIter.next();
-
                 Ref realUpdateRef = updateRef.getOverlap(precRef);
                 findDeps(precRef).forEach(depRefWithMeta -> {
-                    Ref depUpdateRef = findUpdateDepRef(precRef, depRefWithMeta.getRef(),
+                    Set<Ref> depUpdateRefSet = findUpdateDepRef(precRef, depRefWithMeta.getRef(),
                             depRefWithMeta.getEdgeMeta(), realUpdateRef);
-                    if (!isContained(result, depUpdateRef)) {
-                        result.add(depUpdateRef);
-                        if (!isDirectDep) updateQueue.add(depUpdateRef);
-                    }
+                    depUpdateRefSet.forEach(depUpdateRef -> {
+                        if (!isContained(result, depUpdateRef)) {
+                            result.add(depUpdateRef);
+                            if (!isDirectDep) updateQueue.add(depUpdateRef);
+                        }
+                    });
                 });
             }
         }
@@ -219,9 +220,19 @@ public class DependencyGraphTACO implements DependencyGraph {
         List<Pair<Ref, RefWithMeta>> ret = new LinkedList<>();
         boolean isDirectPrec = true;
         splitRangeByOneCell(dep, delDep).forEach(splitDep -> {
-            Ref splitPrec = findUpdatePrecRef(prec, dep, edgeMeta, splitDep, isDirectPrec);
-            ret.add(new Pair<>(splitPrec, new RefWithMeta(splitDep, edgeMeta)));
+            Ref newSplitDep = splitDep;
+            PatternType patternType = edgeMeta.patternType;
+            if (patternType.ordinal() >= PatternType.TYPEFIVE.ordinal()
+                    && patternType.ordinal() <= PatternType.TYPEELEVEN.ordinal()) {
+                int gapSize = patternType.ordinal() - PatternType.TYPEFIVE.ordinal() + 1;
+                newSplitDep = findValidGapRef(dep, splitDep, gapSize);
+            }
+            if (newSplitDep != null) {
+                Ref splitPrec = findUpdatePrecRef(prec, dep, edgeMeta, newSplitDep, isDirectPrec);
+                ret.add(new Pair<>(splitPrec, new RefWithMeta(splitDep, edgeMeta)));
+            }
         });
+        if (ret.isEmpty()) ret.add(new Pair<>(prec, new RefWithMeta(dep, edgeMeta)));
         return ret;
     }
 
@@ -349,9 +360,13 @@ public class DependencyGraphTACO implements DependencyGraph {
         LinkedList<CompressInfo> compressInfoList = new LinkedList<>();
         findOverlapAndAdjacency(dep).forEach(candDep -> {
             findPrecs(candDep).forEach(candPrecWithMeta -> {
-                CompressInfo compRes = findCompressionPattern(prec, dep,
-                        candPrecWithMeta.getRef(), candDep, candPrecWithMeta.getEdgeMeta());
-                addToCompressionInfoList(compressInfoList, compRes);
+                PatternType patternType = candPrecWithMeta.getPatternType();
+                if (patternType.ordinal() < PatternType.TYPEFIVE.ordinal() ||
+                        patternType.ordinal() > PatternType.TYPEELEVEN.ordinal()) {
+                    CompressInfo compRes = findCompressionPattern(prec, dep,
+                            candPrecWithMeta.getRef(), candDep, candPrecWithMeta.getEdgeMeta());
+                    addToCompressionInfoList(compressInfoList, compRes);
+                }
             });
         });
 
