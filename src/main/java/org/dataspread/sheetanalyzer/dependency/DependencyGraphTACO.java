@@ -12,6 +12,7 @@ import org.dataspread.sheetanalyzer.util.Ref;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.dataspread.sheetanalyzer.dependency.util.PatternTools.*;
 
@@ -42,6 +43,7 @@ public class DependencyGraphTACO implements DependencyGraph {
     private void getDependentsInternal(Ref precUpdate,
                                        LinkedHashSet<Ref> result,
                                        boolean isDirectDep) {
+        AtomicReference<RTree<Ref, Rectangle>> resultSet = new AtomicReference<>(RTree.create());
         Queue<Ref> updateQueue = new LinkedList<>();
         updateQueue.add(precUpdate);
         while (!updateQueue.isEmpty()) {
@@ -54,7 +56,9 @@ public class DependencyGraphTACO implements DependencyGraph {
                     Set<Ref> depUpdateRefSet = findUpdateDepRef(precRef, depRefWithMeta.getRef(),
                             depRefWithMeta.getEdgeMeta(), realUpdateRef);
                     depUpdateRefSet.forEach(depUpdateRef -> {
-                        if (!isContained(result, depUpdateRef)) {
+                        if (!isContained(resultSet.get(), depUpdateRef)) {
+                            resultSet.set(resultSet.get().add(depUpdateRef,
+                                    RefUtils.refToRect(depUpdateRef)));
                             result.add(depUpdateRef);
                             if (!isDirectDep) updateQueue.add(depUpdateRef);
                         }
@@ -64,9 +68,16 @@ public class DependencyGraphTACO implements DependencyGraph {
         }
     }
 
-    private boolean isContained(LinkedHashSet<Ref> result, Ref input) {
-        return result.stream().anyMatch(ref -> isSubsume(ref, input));
+    private Boolean isContained(RTree<Ref, Rectangle> resultSet, Ref input) {
+        return resultSet.search(getRectangleFromRef(input)).exists(entry -> {
+                    Ref ref = entry.value();
+                    return isSubsume(ref, input);
+        }).toBlocking().single();
     }
+
+    // private boolean isContained(LinkedHashSet<Ref> result, Ref input) {
+    //     return result.stream().anyMatch(ref -> isSubsume(ref, input));
+    // }
 
     public long getNumEdges() {
         AtomicLong numEdges = new AtomicLong(0);
@@ -385,7 +396,7 @@ public class DependencyGraphTACO implements DependencyGraph {
                             addToCompressionInfoList(compressInfoList, compRes);
                         });
                     });
-                }
+                } else break;
             }
         }
 
