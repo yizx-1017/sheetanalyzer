@@ -22,8 +22,8 @@ public class SheetAnalyzer {
     private final HashMap<String, DependencyGraph> depGraphMap;
     private final boolean inRowCompression;
     private long numEdges = 0;
-    private long maxNumQueries = 100000;
-    private long maxUnChangeNumQueries = 1000;
+    private final long maxNumQueries = 100000;
+    private final long maxUnChangeNumQueries = 10000;
 
     public SheetAnalyzer(String filePath,
                          boolean inRowCompression) throws SheetNotSupportedException {
@@ -120,8 +120,61 @@ public class SheetAnalyzer {
 
     /* Return the cell that has the longest org.dataspread.sheetanalyzer.dependency chain
     * */
-    public Ref getRefWithLongestDepChain() {
-        return null;
+    public Pair<Ref, Long> getRefWithLongestDepChain() {
+        AtomicReference<Ref> retRef = new AtomicReference<>(null);
+        AtomicLong maxDepLength = new AtomicLong(0L);
+        sheetDataMap.forEach((sheetName, sheetData) -> {
+            Pair<Ref, Long> perSheetPair = getRefWithLongestPathPerSheetData(sheetData);
+            if (perSheetPair.second > maxDepLength.get()) {
+                perSheetPair.first.setSheetName(sheetName);
+                retRef.set(perSheetPair.first);
+                maxDepLength.set(perSheetPair.second);
+            }
+        });
+
+        return new Pair<>(retRef.get(), maxDepLength.get());
+    }
+
+    private Pair<Ref, Long> getRefWithLongestPathPerSheetData(SheetData sheetData) {
+        long maxRange = 100;
+        Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> cellwiseDepGraph = sheetData.genCellWiseDepGraph(maxRange);
+        HashMap<Ref, Set<Ref>> precToDeps = cellwiseDepGraph.first;
+        HashMap<Ref, Set<Ref>> depToPrecs = cellwiseDepGraph.second;
+
+        HashMap<Ref, Long> refToLength = new HashMap<>();
+        List<Ref> sortedRefs = sheetData.getSortedRefsByTopology(sheetData.replicateGraph(cellwiseDepGraph));
+        sortedRefs.forEach(rootCell -> {
+            Long curLength = refToLength.getOrDefault(rootCell, 0L);
+            refToLength.put(rootCell, curLength);
+            precToDeps.getOrDefault(rootCell, new HashSet<>()).forEach(dep -> {
+                Long depLength = refToLength.getOrDefault(dep, curLength + 1L);
+                if (depLength < curLength + 1L) depLength = curLength + 1;
+                refToLength.put(dep, depLength);
+            });
+        });
+
+        AtomicReference<Ref> maxRef = new AtomicReference<>();
+        AtomicReference<Long> maxLength = new AtomicReference<>(0L);
+        refToLength.forEach((curRef, curLength) -> {
+            if (curLength > maxLength.get()) {
+                maxRef.set(curRef);
+                maxLength.set(curLength);
+            }
+        });
+
+        Long curLength = maxLength.get();
+        Ref curRef = maxRef.get();
+        while (curLength > 1L) {
+            for (Ref prec: depToPrecs.get(curRef)) {
+                if (refToLength.get(prec) == curLength - 1){
+                    curRef = prec;
+                    curLength -= 1;
+                    break;
+                }
+            }
+        }
+
+        return new Pair<>(curRef, maxLength.get() - 1);
     }
 
     /* Return the cell that has the largest number of dependencies

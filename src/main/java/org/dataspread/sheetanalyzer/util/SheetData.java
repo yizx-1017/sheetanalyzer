@@ -14,6 +14,8 @@ public class SheetData {
     private final HashMap<Ref, CellContent> sheetContent = new HashMap<>();
     private final HashSet<Ref> accessAreaCache = new HashSet<>();
 
+    public static final Ref rootRef = new RefImpl(-1, -1);
+
     public SheetData(String sheetName) {
         this.sheetName = sheetName;
     }
@@ -94,11 +96,103 @@ public class SheetData {
             for (int col = ref.getColumn(); col <= ref.getLastColumn(); col++) {
                 Ref cellRef = new RefImpl(row, col);
                 CellContent cc = sheetContent.get(cellRef);
-                if (!cc.isFormula)
+                if (!cc.isFormula  || (formulaNumRefs.get(cellRef) == 0))
                     cellSet.add(cellRef);
             }
         }
         return cellSet;
+    }
+
+    public Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> genCellWiseDepGraph(long maxRange) {
+        Set<Ref> valueCells = new HashSet<>();
+
+        HashMap<Ref, Set<Ref>> precToDeps = new HashMap<>();
+        HashMap<Ref, Set<Ref>> depToPrecs = new HashMap<>();
+
+        sheetDeps.forEach((dep, precSet) -> {
+            precSet.forEach(precRange -> {
+                int numCells = 0;
+                for (int row = precRange.getRow(); row <= precRange.getLastRow(); row++) {
+                    for (int col = precRange.getColumn(); col <= precRange.getLastColumn(); col++) {
+                        Ref prec = new RefImpl(row, col);
+                        CellContent cc = sheetContent.get(prec);
+                        if (!cc.isFormula || (formulaNumRefs.get(prec) == 0))
+                            valueCells.add(prec);
+
+                        // add to precToDeps
+                        Set<Ref> deps = precToDeps.getOrDefault(prec, new HashSet<>());
+                        deps.add(dep);
+                        precToDeps.putIfAbsent(prec, deps);
+
+                        // add to depToPrecs
+                        Set<Ref> precs = depToPrecs.getOrDefault(dep, new HashSet<>());
+                        precs.add(prec);
+                        depToPrecs.putIfAbsent(dep, precs);
+
+                        numCells += 1;
+                    }
+                    if (numCells >= maxRange) break;
+                }
+            });
+        });
+
+        precToDeps.put(rootRef, valueCells);
+        valueCells.forEach(valueCell -> {
+            Set<Ref> precSet = new HashSet<>();
+            precSet.add(rootRef);
+            depToPrecs.put(valueCell, precSet);
+        });
+
+        return new Pair<>(precToDeps, depToPrecs);
+    }
+
+    public Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> replicateGraph(Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> cellWiseGraph) {
+        HashMap<Ref, Set<Ref>> newPrecToDeps = new HashMap<>();
+        HashMap<Ref, Set<Ref>> newDepToPrecs = new HashMap<>();
+
+        HashMap<Ref, Set<Ref>> oldPrecToDeps = cellWiseGraph.first;
+        HashMap<Ref, Set<Ref>> oldDepToPrecs = cellWiseGraph.second;
+
+        oldPrecToDeps.forEach((prec, depSet) -> {
+            HashSet<Ref> newDepSet = new HashSet<>();
+            newDepSet.addAll(depSet);
+            newPrecToDeps.put(prec, newDepSet);
+        });
+
+        oldDepToPrecs.forEach((dep, precSet) -> {
+            HashSet<Ref> newPrecSet = new HashSet<>();
+            newPrecSet.addAll(precSet);
+            newDepToPrecs.put(dep, newPrecSet);
+        });
+
+        return new Pair<>(newPrecToDeps, newDepToPrecs);
+    }
+
+    public List<Ref> getSortedRefsByTopology(Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> cellWiseGraph) {
+        HashMap<Ref, Set<Ref>> precToDeps = cellWiseGraph.first;
+        HashMap<Ref, Set<Ref>> depToPrecs = cellWiseGraph.second;
+
+        List<Ref> sortedCells = new LinkedList<>();
+        List<Ref> rootCells = new LinkedList<>();
+        rootCells.add(rootRef);
+
+        while (!rootCells.isEmpty()) {
+            Ref rootCell = rootCells.remove(0);
+            Set<Ref> depSet = precToDeps.remove(rootCell);
+            if (depSet != null) {
+                depSet.forEach(dep -> {
+                    Set<Ref> precSet = depToPrecs.get(dep);
+                    precSet.remove(rootCell);
+                    if (precSet.isEmpty()) {
+                        depToPrecs.remove(dep);
+                        rootCells.add(dep);
+                    }
+                });
+            }
+            sortedCells.add(rootCell);
+        }
+
+        return sortedCells;
     }
 
     public void setMaxRowsCols(int maxRows, int maxCols) {

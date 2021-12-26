@@ -27,13 +27,14 @@ public class TestSheetAnalyzer {
             System.exit(-1);
         }
 
-        boolean inRowCompression = false;
+        boolean inRowCompression = true;
         HashMap<Integer, Long> numRefDist = new HashMap<>();
         List<Long> numFormulae = new LinkedList<>();
         List<String> fileName = new LinkedList<>();
         List<Long> numCompEdges = new LinkedList<>();
         List<Long> numEdges = new LinkedList<>();
         List<Pair<Ref, Long>> mostDeps = new LinkedList<>();
+        List<Pair<Ref, Long>> longestDeps = new LinkedList<>();
 
         String xlsFolder = args[0];
         File dir = new File(xlsFolder);
@@ -50,7 +51,8 @@ public class TestSheetAnalyzer {
                     numFormulae.add(sheetAnalyzer.getNumOfFormulae());
                     numCompEdges.add(sheetAnalyzer.getNumCompEdges());
                     numEdges.add(sheetAnalyzer.getNumEdges());
-                    mostDeps.add(sheetAnalyzer.getRefWithMostDeps());
+                    // mostDeps.add(sheetAnalyzer.getRefWithMostDeps());
+                    // longestDeps.add(sheetAnalyzer.getRefWithLongestDepChain());
                     fileName.add(file.getName());
 
                     HashMap<Integer, Integer> numRefDistPerSheet = sheetAnalyzer.getRefDistribution();
@@ -81,10 +83,13 @@ public class TestSheetAnalyzer {
                 formPW.write(fileName.get(i) + "," + numFormulae.get(i) + "\n");
                 if (numEdges.get(i) >= 10) {
                     edgePW.write(fileName.get(i) + ","
-                            + numCompEdges.get(i) + ","
                             + numEdges.get(i) + ","
-                            + mostDeps.get(i).first + ","
-                            + mostDeps.get(i).second + "\n");
+                            + numCompEdges.get(i) + ","
+                            // + mostDeps.get(i).first + ","
+                            // + mostDeps.get(i).second + ","
+                            // + longestDeps.get(i).first + ","
+                            // + longestDeps.get(i).second
+                            + "\n");
                 }
             }
 

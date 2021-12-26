@@ -62,14 +62,15 @@ public class POIParser implements SpreadsheetParser {
         return totalRows <= threshold;
     }
 
-    private void parseSpreadsheet() throws SheetNotSupportedException {
+    private void parseSpreadsheet() {
         for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
             SheetData sheetData = parseOneSheet(workbook.getSheetAt(i));
-            sheetDataMap.put(workbook.getSheetAt(i).getSheetName(), sheetData);
+            sheetDataMap.put(workbook.getSheetAt(i).getSheetName()
+                    .replace(',','-'), sheetData);
         }
     }
 
-    private SheetData parseOneSheet(Sheet sheet) throws SheetNotSupportedException {
+    private SheetData parseOneSheet(Sheet sheet) {
         SheetData sheetData = new SheetData(sheet.getSheetName());
         int maxRows = 0;
         int maxCols = 0;
@@ -107,29 +108,36 @@ public class POIParser implements SpreadsheetParser {
         }
     }
 
-    private void parseOneFormulaCell(SheetData sheetData, Cell cell) throws SheetNotSupportedException {
-        Ptg[] tokens = this.getTokens(cell);
+    private void parseOneFormulaCell(SheetData sheetData, Cell cell) {
         Ref dep = new RefImpl(cell.getRowIndex(), cell.getColumnIndex());
-        HashSet<Ref> precSet = new HashSet<>();
-        int numRefs = 0;
-        if (tokens != null) {
-            for (Ptg token : tokens) {
-                if (token instanceof OperandPtg) {
-                    Ref prec = parseOneToken(cell, (OperandPtg) token, sheetData);
-                    if (prec != null) {
-                        numRefs += 1;
-                        precSet.add(prec);
+        try {
+            Ptg[] tokens = this.getTokens(cell);
+            HashSet<Ref> precSet = new HashSet<>();
+            int numRefs = 0;
+            if (tokens != null) {
+                for (Ptg token : tokens) {
+                    if (token instanceof OperandPtg) {
+                        Ref prec = parseOneToken(cell, (OperandPtg) token, sheetData);
+                        if (prec != null) {
+                            numRefs += 1;
+                            precSet.add(prec);
+                        }
                     }
                 }
             }
-        }
-        if (!precSet.isEmpty()) {
-            sheetData.addDeps(dep, precSet);
+
+            if (!precSet.isEmpty())
+                sheetData.addDeps(dep, precSet);
             sheetData.addFormulaNumRef(dep, numRefs);
+            CellContent cellContent = new CellContent("",
+                    cell.getCellFormula(), true);
+            sheetData.addContent(dep, cellContent);
+
+        } catch (SheetNotSupportedException e) {
+            CellContent cellContent = new CellContent("",
+                    "", false);
+            sheetData.addContent(dep, cellContent);
         }
-        CellContent cellContent = new CellContent("",
-                cell.getCellFormula(), true);
-        sheetData.addContent(dep, cellContent);
     }
 
     private Ref parseOneToken(Cell cell, OperandPtg token,
@@ -180,17 +188,21 @@ public class POIParser implements SpreadsheetParser {
         return null;
     }
 
-    private Sheet getDependentSheet (Cell src, OperandPtg opPtg) {
+    private Sheet getDependentSheet (Cell src, OperandPtg opPtg) throws SheetNotSupportedException {
         Sheet sheet = null;
         if (opPtg instanceof RefPtg) {
             sheet = src.getSheet();
         } else if (opPtg instanceof Area2DPtgBase) {
             sheet = src.getSheet();
-        } else if (opPtg instanceof Ref3DPtg) {
-            sheet = this.workbook.getSheet(this.getSheetNameFrom3DRef((Ref3DPtg) opPtg));
-        } else if (opPtg instanceof Area3DPtg) {
-            sheet = this.workbook.getSheet(this.getSheetNameFrom3DRef((Area3DPtg) opPtg));
+        } else {
+            throw new SheetNotSupportedException();
         }
+
+        // else if (opPtg instanceof Ref3DPtg) {
+        //     sheet = this.workbook.getSheet(this.getSheetNameFrom3DRef((Ref3DPtg) opPtg));
+        // } else if (opPtg instanceof Area3DPtg) {
+        //     sheet = this.workbook.getSheet(this.getSheetNameFrom3DRef((Area3DPtg) opPtg));
+        // }
         return sheet;
     }
 
