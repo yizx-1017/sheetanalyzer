@@ -13,6 +13,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.dataspread.sheetanalyzer.util.*;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -37,11 +38,17 @@ public class POIParser implements SpreadsheetParser {
             } else {
                 throw new SheetNotSupportedException();
             }
-
             parseSpreadsheet();
         } catch (Exception e) {
-            // e.printStackTrace();
             throw new SheetNotSupportedException("Parsing " + filePath + " failed");
+        } finally {
+            if (workbook != null) {
+                try {
+                    workbook.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
 
     }

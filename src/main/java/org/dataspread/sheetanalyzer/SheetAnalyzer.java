@@ -22,6 +22,7 @@ public class SheetAnalyzer {
     private final HashMap<String, DependencyGraph> depGraphMap;
     private final boolean inRowCompression;
     private long numEdges = 0;
+    private long numVertices = 0;
     private final long maxNumQueries = 100000;
     private final long maxUnChangeNumQueries = 10000;
 
@@ -41,6 +42,7 @@ public class SheetAnalyzer {
         sheetDataMap.forEach((sheetName, sheetData) -> {
             DependencyGraphTACO depGraph = new DependencyGraphTACO();
             depGraph.setInRowCompression(inRowCompression);
+            HashSet<Ref> refSet = new HashSet<>();
             sheetData.getSortedDepPairs(isRowWise).forEach(depPair -> {
                 if (inRowCompression) {
                     boolean inRowOnly = isInRowOnly(depPair);
@@ -52,9 +54,12 @@ public class SheetAnalyzer {
                     depGraph.add(prec, dep);
                     numEdges += 1;
                 });
+                refSet.add(dep);
+                refSet.addAll(precSet);
             });
             depGraph.setDoCompression(true);
             inputDepGraphMap.put(sheetName, depGraph);
+            numVertices += refSet.size();
         });
     }
 
@@ -69,6 +74,8 @@ public class SheetAnalyzer {
         });
         return isInRowOnly.get();
     }
+
+    public String getFileName() { return fileName; }
 
     public HashMap<String, DependencyGraph> getDependencyGraphs() {
         return depGraphMap;
@@ -106,8 +113,20 @@ public class SheetAnalyzer {
         return numOfCompEdges.get();
     }
 
+    public long getNumCompVertices() {
+        AtomicLong numOfCompVertices = new AtomicLong();
+        depGraphMap.forEach((sheetName, depGraph) -> {
+            numOfCompVertices.addAndGet(depGraph.getNumVertices());
+        });
+        return numOfCompVertices.get();
+    }
+
     public long getNumEdges() {
         return numEdges;
+    }
+
+    public long getNumVertices() {
+        return numVertices;
     }
 
     public long getNumOfFormulae() {
@@ -166,7 +185,8 @@ public class SheetAnalyzer {
         Ref curRef = maxRef.get();
         while (curLength > 1L) {
             for (Ref prec: depToPrecs.get(curRef)) {
-                if (refToLength.get(prec) == curLength - 1){
+                if (refToLength.containsKey(prec) &&
+                        refToLength.get(prec) == curLength - 1){
                     curRef = prec;
                     curLength -= 1;
                     break;

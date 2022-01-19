@@ -56,12 +56,12 @@ public class DependencyGraphTACO implements DependencyGraph {
                     Set<Ref> depUpdateRefSet = findUpdateDepRef(precRef, depRefWithMeta.getRef(),
                             depRefWithMeta.getEdgeMeta(), realUpdateRef);
                     depUpdateRefSet.forEach(depUpdateRef -> {
-                        if (!isContained(resultSet.get(), depUpdateRef)) {
-                            resultSet.set(resultSet.get().add(depUpdateRef,
-                                    RefUtils.refToRect(depUpdateRef)));
-                            result.add(depUpdateRef);
-                            if (!isDirectDep) updateQueue.add(depUpdateRef);
-                        }
+                        LinkedList<Ref> overlapRef = getNonOverlapRef(resultSet.get(), depUpdateRef);
+                        overlapRef.forEach(olRef -> {
+                            resultSet.set(resultSet.get().add(olRef, RefUtils.refToRect(olRef)));
+                            result.add(olRef);
+                            if (!isDirectDep) updateQueue.add(olRef);
+                        });
                     });
                 });
             }
@@ -75,6 +75,20 @@ public class DependencyGraphTACO implements DependencyGraph {
         }).toBlocking().single();
     }
 
+    private LinkedList<Ref> getNonOverlapRef(RTree<Ref, Rectangle> resultSet, Ref input) {
+        LinkedList<Ref> retRefList = new LinkedList<>();
+        retRefList.addLast(input);
+        resultSet.search(getRectangleFromRef(input)).forEach(refRectangleEntry -> {
+            Ref ref = refRectangleEntry.value();
+            int length = retRefList.size();
+            for (int i = 0; i < length; i++) {
+                Ref inputRef = retRefList.removeFirst();
+                inputRef.getNonOverlap(ref).forEach(retRefList::addLast);
+            }
+        });
+        return retRefList;
+    }
+
     // private boolean isContained(LinkedHashSet<Ref> result, Ref input) {
     //     return result.stream().anyMatch(ref -> isSubsume(ref, input));
     // }
@@ -85,6 +99,17 @@ public class DependencyGraphTACO implements DependencyGraph {
             numEdges.addAndGet(precSet.size());
         });
         return numEdges.get();
+    }
+
+    public long getNumVertices() {
+        HashSet<Ref> refSet = new HashSet<>();
+        depToPrecList.forEach((dep, precSet) -> {
+            refSet.add(dep);
+            precSet.forEach(refWithMeta -> {
+                refSet.add(refWithMeta.getRef());
+            });
+        });
+        return refSet.size();
     }
 
     public void add(Ref precedent, Ref dependent) {
@@ -369,7 +394,7 @@ public class DependencyGraphTACO implements DependencyGraph {
 
     private LinkedList<CompressInfo> findCompressInfo(Ref prec, Ref dep) {
         LinkedList<CompressInfo> compressInfoList = new LinkedList<>();
-        findOverlapAndAdjacency(dep).forEach(candDep -> {
+        findOverlapAndAdjacency(dep, 0).forEach(candDep -> {
             findPrecs(candDep).forEach(candPrecWithMeta -> {
                 PatternType patternType = candPrecWithMeta.getPatternType();
                 if (patternType.ordinal() < PatternType.TYPEFIVE.ordinal() ||
@@ -388,7 +413,7 @@ public class DependencyGraphTACO implements DependencyGraph {
                 PatternType patternType =
                         PatternType.values()[PatternType.TYPEFIVE.ordinal() + i];
                 if (compressInfoList.isEmpty()) {
-                    findOverlapAndAdjacency(dep).forEach(candDep -> {
+                    findOverlapAndAdjacency(dep, gapSize).forEach(candDep -> {
                         findPrecs(candDep).forEach(candPrecWithMeta -> {
                             CompressInfo compRes = findCompressionPatternWithGap(prec, dep,
                                     candPrecWithMeta.getRef(), candDep,
@@ -423,7 +448,7 @@ public class DependencyGraphTACO implements DependencyGraph {
 
         // Otherwise, find the compression type
         // Guarantee the adjacency
-        Direction direction = findAdjacencyDirection(dep, candDep);
+        Direction direction = findAdjacencyDirection(dep, candDep, DEAULT_SHIFT_STEP);
         if (direction == Direction.NODIRECTION ||
                 (inRowCompression &&
                         (direction == Direction.TOLEFT ||
@@ -467,15 +492,16 @@ public class DependencyGraphTACO implements DependencyGraph {
         return large.getOverlap(small).equals(small);
     }
 
-    private Iterable<Ref> findOverlapAndAdjacency(Ref ref) {
+    private Iterable<Ref> findOverlapAndAdjacency(Ref ref, int gapSize) {
         LinkedList<Ref> res = new LinkedList<>();
+        int shift_step = gapSize + DEAULT_SHIFT_STEP;
 
         findOverlappingRefs(ref).forEachRemaining(res::addLast);
         Arrays.stream(Direction.values()).filter(direction -> direction != Direction.NODIRECTION)
                 .forEach(direction ->
-                        findOverlappingRefs(shiftRef(ref, direction))
+                        findOverlappingRefs(shiftRef(ref, direction, shift_step))
                                 .forEachRemaining(adjRef -> {
-                                    if (isValidAdjacency(adjRef, ref)) res.addLast(adjRef); // valid adjacency
+                                    if (isValidAdjacency(adjRef, ref, shift_step)) res.addLast(adjRef); // valid adjacency
                                 })
                 );
 

@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class PatternTools {
-    private final static int SHIFT_STEP = 1;
+    public final static int DEAULT_SHIFT_STEP = 1;
     private final static int FIRST_ROW = 0;
     private final static int FIRST_COL = 0;
 
@@ -20,7 +20,7 @@ public class PatternTools {
 
     public static boolean isCompressibleTypeOne(Ref lastCandPrec, Ref prec,
                                          Direction direction) {
-        Ref shiftedRef = shiftRef(lastCandPrec, direction);
+        Ref shiftedRef = shiftRef(lastCandPrec, direction, DEAULT_SHIFT_STEP);
         return shiftedRef != null && shiftedRef.equals(prec);
     }
 
@@ -30,9 +30,9 @@ public class PatternTools {
         boolean isTypeZero = false;
         for (Direction direction: Direction.values()) {
             if (direction != Direction.NODIRECTION && !isTypeZero) {
-                Ref shiftedRef = shiftRef(prec, direction);
+                Ref shiftedRef = shiftRef(prec, direction, DEAULT_SHIFT_STEP);
                 if (shiftedRef != null && shiftedRef.equals(dep)) { // check adjacency
-                    Ref lastCandDep = shiftRef(lastCandPrec, direction);
+                    Ref lastCandDep = shiftRef(lastCandPrec, direction, DEAULT_SHIFT_STEP);
                     isTypeZero = (lastCandDep != null && lastCandDep.equals(prec)) ||
                             lastCandPrec.equals(dep);
                 }
@@ -122,42 +122,42 @@ public class PatternTools {
         return lastCandPrec.equals(prec);
     }
 
-    public static Ref shiftRef(Ref ref, Direction direction) {
+    public static Ref shiftRef(Ref ref, Direction direction, int shift_step) {
         Ref res = null;
         switch (direction) {
             case TOLEFT:
                 if (ref.getColumn() != FIRST_COL) {
                     res = new RefImpl(ref.getBookName(),
                             ref.getSheetName(),
-                            ref.getRow(), ref.getColumn() - SHIFT_STEP,
-                            ref.getLastRow(), ref.getLastColumn() - SHIFT_STEP);
+                            ref.getRow(), ref.getColumn() - shift_step,
+                            ref.getLastRow(), ref.getLastColumn() - shift_step);
                 }
                 break;
             case TORIGHT:
                 res = new RefImpl(ref.getBookName(),
                         ref.getSheetName(),
-                        ref.getRow(), ref.getColumn() + SHIFT_STEP,
-                        ref.getLastRow(), ref.getLastColumn() + SHIFT_STEP);
+                        ref.getRow(), ref.getColumn() + shift_step,
+                        ref.getLastRow(), ref.getLastColumn() + shift_step);
                 break;
             case TOUP:
                 if (ref.getRow() != FIRST_ROW) {
                     res = new RefImpl(ref.getBookName(),
                             ref.getSheetName(),
-                            ref.getRow() - SHIFT_STEP, ref.getColumn(),
-                            ref.getLastRow() - SHIFT_STEP, ref.getLastColumn());
+                            ref.getRow() - shift_step, ref.getColumn(),
+                            ref.getLastRow() - shift_step, ref.getLastColumn());
                 }
                 break;
             default: // TODOWN
                 res = new RefImpl(ref.getBookName(),
                         ref.getSheetName(),
-                        ref.getRow() + SHIFT_STEP, ref.getColumn(),
-                        ref.getLastRow() + SHIFT_STEP, ref.getLastColumn());
+                        ref.getRow() + shift_step, ref.getColumn(),
+                        ref.getLastRow() + shift_step, ref.getLastColumn());
         }
         return res;
     }
 
     // what is the adjacency direction of refA relative to refB
-    public static Direction findAdjacencyDirection(Ref refA, Ref refB) {
+    public static Direction findAdjacencyDirection(Ref refA, Ref refB, int shiftStep) {
         int adjFirstRow = refA.getRow();
         int adjFirstCol = refA.getColumn();
         int adjLastRow = refA.getLastRow();
@@ -169,23 +169,23 @@ public class PatternTools {
         int lastCol = refB.getLastColumn();
 
         if (adjFirstRow == firstRow && adjLastRow == lastRow
-                && adjLastCol + SHIFT_STEP == firstCol) { // To Left
+                && adjLastCol + shiftStep == firstCol) { // To Left
             return Direction.TOLEFT;
         } else if (adjFirstRow == firstRow && adjLastRow == lastRow
-                && lastCol + SHIFT_STEP == adjFirstCol) { // To Right
+                && lastCol + shiftStep == adjFirstCol) { // To Right
             return Direction.TORIGHT;
         } else if (adjFirstCol == firstCol && adjLastCol == lastCol
-                && adjLastRow + SHIFT_STEP == firstRow)
+                && adjLastRow + shiftStep == firstRow)
             return Direction.TOUP;
         else if (adjFirstCol == firstCol && adjLastCol == lastCol
-                && lastRow + SHIFT_STEP == adjFirstRow)
+                && lastRow + shiftStep == adjFirstRow)
             return Direction.TODOWN;
         else
             return Direction.NODIRECTION;
     }
 
-    public static boolean isValidAdjacency(Ref adjRef, Ref ref) {
-        return findAdjacencyDirection(adjRef, ref) != Direction.NODIRECTION;
+    public static boolean isValidAdjacency(Ref adjRef, Ref ref, int shiftStep) {
+        return findAdjacencyDirection(adjRef, ref, shiftStep) != Direction.NODIRECTION;
     }
 
     public static Set<Ref> findUpdateDepRef(Ref prec, Ref dep,
@@ -227,7 +227,14 @@ public class PatternTools {
                 if (patternType != PatternType.TYPEONE) {
                     int gapSize = patternType.ordinal() - PatternType.TYPEFIVE.ordinal() + 1;
                     retSet = findRefSetForGapType(prec.getBookName(), prec.getSheetName(),
-                            row, col, lastRow, lastCol, gapSize);
+                            Math.max(row, dep.getRow()),
+                            Math.max(col, dep.getColumn()),
+                            Math.min(lastRow, dep.getLastRow()),
+                            Math.min(lastCol, dep.getLastColumn()),
+                            dep.getRow(), dep.getColumn(),
+                            dep.getLastRow(), dep.getLastColumn(),
+                            gapSize);
+                    return retSet;
                 }
                 break;
 
@@ -256,29 +263,31 @@ public class PatternTools {
 
         assert edgeMeta.patternType != PatternType.NOTYPE || (row == lastRow && col == lastCol);
 
-        if (retSet.isEmpty()) {
-            retSet.add(new RefImpl(
-                    prec.getBookName(),
-                    prec.getSheetName(),
-                    row, col, lastRow, lastCol).getOverlap(dep));
-        }
+        retSet.add(new RefImpl(
+                prec.getBookName(),
+                prec.getSheetName(),
+                row, col, lastRow, lastCol).getOverlap(dep));
 
         return retSet;
     }
 
     public static Set<Ref> findRefSetForGapType(String bookName,
                                                 String sheetName,
+                                                int iRow, int iCol,
+                                                int iLastRow, int iLastCol,
                                                 int row, int col,
                                                 int lastRow, int lastCol,
                                                 int gapSize) {
         Set<Ref> refSet = new HashSet<>();
         if (row == lastRow) {
             for (int colVar = col; colVar <= lastCol; colVar += (gapSize + 1)) {
-                refSet.add(new RefImpl(bookName, sheetName, row, colVar));
+                if (colVar >= iCol && colVar <= iLastCol)
+                    refSet.add(new RefImpl(bookName, sheetName, row, colVar));
             }
         } else if (col == lastCol) {
             for (int rowVar = row; rowVar <= lastRow; rowVar += (gapSize + 1)) {
-                refSet.add(new RefImpl(bookName, sheetName, rowVar, col));
+                if (rowVar >= iRow && rowVar <= iLastRow)
+                    refSet.add(new RefImpl(bookName, sheetName, rowVar, col));
             }
         } else {
             assert(false);
