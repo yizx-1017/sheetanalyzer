@@ -67,10 +67,6 @@ public class SheetData {
         });
         if (rowWise) depPairList.sort(rowWiseComp);
         else depPairList.sort(colWiseComp);
-        Pair a = null;
-        if (!depPairList.isEmpty()) {
-            a = depPairList.getLast();
-        }
         return depPairList;
     }
 
