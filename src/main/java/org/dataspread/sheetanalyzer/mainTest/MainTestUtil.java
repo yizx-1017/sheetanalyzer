@@ -20,8 +20,8 @@ public class MainTestUtil {
         long numCompEdges = sheetAnalyzer.getNumCompEdges();
         long numCompVertices = sheetAnalyzer.getNumCompVertices();
 
-        Pair<Ref, Long> mostDeps = null;
-        Pair<Ref, Long> longestDeps = null;
+        Pair<Ref, Long> mostDeps = new Pair(new RefImpl(-1, -1), 0);
+        Pair<Ref, Long> longestDeps = new Pair(new RefImpl(-1, -1), 0);
 
         long[] numCompEdgesPerPattern = new long[PatternType.values().length];
         long[] numEdgesPerPattern = new long[PatternType.values().length];

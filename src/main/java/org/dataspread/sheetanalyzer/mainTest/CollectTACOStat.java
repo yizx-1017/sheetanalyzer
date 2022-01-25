@@ -46,7 +46,7 @@ public class CollectTACOStat {
                         stringBuilder.append(breakDownstring).append(":");
                     });
                     stringBuilder.deleteCharAt(stringBuilder.length() - 1);
-                    stringBuilder.append("\"");
+                    stringBuilder.append("\",");
                     long numDependents =
                             sheetAnalyzer.getSheetNames().stream().mapToLong(sheetName ->
                                     sheetAnalyzer.getNumDependents(sheetName, ref)).sum();
