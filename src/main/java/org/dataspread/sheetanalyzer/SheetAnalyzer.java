@@ -49,13 +49,13 @@ public class SheetAnalyzer {
                     depGraph.setDoCompression(inRowOnly);
                 }
                 Ref dep = depPair.first;
-                HashSet<Ref> precSet = depPair.second;
-                precSet.forEach(prec -> {
+                List<Ref> precList = depPair.second;
+                precList.forEach(prec -> {
                     depGraph.add(prec, dep);
                     numEdges += 1;
                 });
                 refSet.add(dep);
-                refSet.addAll(precSet);
+                refSet.addAll(precList);
             });
             depGraph.setDoCompression(true);
             inputDepGraphMap.put(sheetName, depGraph);
@@ -63,9 +63,9 @@ public class SheetAnalyzer {
         });
     }
 
-    private boolean isInRowOnly(Pair<Ref, HashSet<Ref>> depPair) {
+    private boolean isInRowOnly(Pair<Ref, List<Ref>> depPair) {
         Ref dep = depPair.first;
-        HashSet<Ref> precSet = depPair.second;
+        List<Ref> precSet = depPair.second;
         int rowIndex = dep.getRow();
         AtomicBoolean isInRowOnly = new AtomicBoolean(true);
         precSet.forEach(prec -> {

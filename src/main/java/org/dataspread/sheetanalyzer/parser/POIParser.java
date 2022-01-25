@@ -16,6 +16,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 
 public class POIParser implements SpreadsheetParser {
 
@@ -119,7 +121,7 @@ public class POIParser implements SpreadsheetParser {
         Ref dep = new RefImpl(cell.getRowIndex(), cell.getColumnIndex());
         try {
             Ptg[] tokens = this.getTokens(cell);
-            HashSet<Ref> precSet = new HashSet<>();
+            List<Ref> precList = new LinkedList<>();
             int numRefs = 0;
             if (tokens != null) {
                 for (Ptg token : tokens) {
@@ -127,14 +129,14 @@ public class POIParser implements SpreadsheetParser {
                         Ref prec = parseOneToken(cell, (OperandPtg) token, sheetData);
                         if (prec != null) {
                             numRefs += 1;
-                            precSet.add(prec);
+                            precList.add(prec);
                         }
                     }
                 }
             }
 
-            if (!precSet.isEmpty())
-                sheetData.addDeps(dep, precSet);
+            if (!precList.isEmpty())
+                sheetData.addDeps(dep, precList);
             sheetData.addFormulaNumRef(dep, numRefs);
             CellContent cellContent = new CellContent("",
                     cell.getCellFormula(), true);

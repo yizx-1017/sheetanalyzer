@@ -9,7 +9,7 @@ public class SheetData {
     private int maxRows;
     private int maxCols;
 
-    private final HashMap<Ref, HashSet<Ref>> sheetDeps = new HashMap<>();
+    private final HashMap<Ref, List<Ref>> sheetDeps = new HashMap<>();
     private final HashMap<Ref, Integer> formulaNumRefs = new HashMap<>();
     private final HashMap<Ref, CellContent> sheetContent = new HashMap<>();
     private final HashSet<Ref> accessAreaCache = new HashSet<>();
@@ -22,7 +22,7 @@ public class SheetData {
         this.sheetName = sheetName;
     }
 
-    public static Comparator<Pair<Ref, HashSet<Ref>>> rowWiseComp =
+    public static Comparator<Pair<Ref, List<Ref>>> rowWiseComp =
             (pairA, pairB) -> {
                 Ref refA = pairA.first;
                 Ref refB = pairB.first;
@@ -32,7 +32,7 @@ public class SheetData {
                 else return rowResult;
             };
 
-    public static Comparator<Pair<Ref, HashSet<Ref>>> colWiseComp =
+    public static Comparator<Pair<Ref, List<Ref>>> colWiseComp =
             (pairA, pairB) -> {
                 Ref refA = pairA.first;
                 Ref refB = pairB.first;
@@ -42,8 +42,8 @@ public class SheetData {
                 else return colResult;
             };
 
-    public void addDeps(Ref dep, HashSet<Ref> precSet) {
-        sheetDeps.put(dep, precSet);
+    public void addDeps(Ref dep, List<Ref> precList) {
+        sheetDeps.put(dep, precList);
     }
 
     public void addFormulaNumRef(Ref dep, int numRefs) {
@@ -62,10 +62,10 @@ public class SheetData {
         return accessAreaCache.contains(areaRef);
     }
 
-    public List<Pair<Ref, HashSet<Ref>>> getSortedDepPairs(boolean rowWise) {
-        LinkedList<Pair<Ref, HashSet<Ref>>> depPairList = new LinkedList<>();
-        sheetDeps.forEach((Ref dep, HashSet<Ref> precSet) -> {
-            depPairList.add(new Pair<>(dep, precSet));
+    public List<Pair<Ref, List<Ref>>> getSortedDepPairs(boolean rowWise) {
+        LinkedList<Pair<Ref, List<Ref>>> depPairList = new LinkedList<>();
+        sheetDeps.forEach((Ref dep, List<Ref> precList) -> {
+            depPairList.add(new Pair<>(dep, precList));
         });
         if (rowWise) depPairList.sort(rowWiseComp);
         else depPairList.sort(colWiseComp);
@@ -80,8 +80,8 @@ public class SheetData {
         Set<Ref> valueOnlyPrecSet = new HashSet<>();
         Set<Ref> areaSet = new HashSet<>();
 
-        sheetDeps.forEach((Ref dep, Set<Ref> precSet) -> {
-            precSet.forEach(prec -> {
+        sheetDeps.forEach((Ref dep, List<Ref> precList) -> {
+            precList.forEach(prec -> {
                 if (!areaSet.contains(prec)) {
                     areaSet.add(prec);
                     valueOnlyPrecSet.addAll(toCellSet(prec));
@@ -228,7 +228,7 @@ public class SheetData {
     public int getMaxRows() {return maxRows;}
     public int getMaxCols() {return maxCols;}
 
-    public HashSet<Ref> getPrecSet(Ref dep) {
+    public List<Ref> getPrecSet(Ref dep) {
         return sheetDeps.get(dep);
     }
 
