@@ -206,7 +206,7 @@ public class PatternTools {
         int inputLastRow = precRange.getLastRow();
         int inputLastCol = precRange.getLastColumn();
 
-        if (startRowOffset == 0 && endRowOffset == 0) { // Column-wise
+        if (dep.getColumn() == dep.getLastColumn()) { // Column-wise
             inputCol = prec.getColumn();
             inputLastCol = prec.getLastColumn();
         } else { // Row-wise

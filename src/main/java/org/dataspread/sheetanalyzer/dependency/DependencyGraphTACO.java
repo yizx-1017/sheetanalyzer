@@ -508,6 +508,42 @@ public class DependencyGraphTACO implements DependencyGraph {
         return res;
     }
 
+    public String getTACOBreakdown() {
+        HashMap<PatternType, Integer> typeCount = new HashMap();
+        depToPrecList.keySet().forEach(dep -> {
+            List<RefWithMeta> precWithMetaList = depToPrecList.get(dep);
+            precWithMetaList.forEach(precWithMeta -> {
+                PatternType pType = precWithMeta.getPatternType();
+                int count = typeCount.getOrDefault(pType, 0);
+                count += 1;
+                typeCount.put(pType, count);
+            });
+        });
+
+        StringBuilder stringBuilder = new StringBuilder();
+        int gapCount = 0;
+        for(PatternType pType : PatternType.values()) {
+            int count = typeCount.getOrDefault(pType, 0);
+            String label = pType.label;
+            if (pType == PatternType.TYPEELEVEN) {
+                count += gapCount;
+                label = "RRGap";
+            }
+            if (count != 0 &&
+                    (pType.ordinal() < PatternType.TYPEFIVE.ordinal() ||
+                            pType.ordinal() >= PatternType.TYPEELEVEN.ordinal())) {
+                stringBuilder.append(label + ":").append(count).append(",");
+            }
+
+            if (pType.ordinal() >= PatternType.TYPEFIVE.ordinal() &&
+                    pType.ordinal() < PatternType.TYPEELEVEN.ordinal()) {
+                gapCount += count;
+            }
+        }
+        stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+        return stringBuilder.toString();
+    }
+
     private class CompressInfoComparator implements Comparator<CompressInfo> {
 
         @Override
