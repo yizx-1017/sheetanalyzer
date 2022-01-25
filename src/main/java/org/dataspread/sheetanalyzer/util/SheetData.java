@@ -152,32 +152,50 @@ public class SheetData {
         return cellWiseGraph;
     }
 
-    public static Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> replicateGraph(Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> cellWiseGraph) {
+    public static Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> replicateGraph(Ref startCell,
+                                                                                      Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> inputCellWiseGraph) {
         HashMap<Ref, Set<Ref>> newPrecToDeps = new HashMap<>();
         HashMap<Ref, Set<Ref>> newDepToPrecs = new HashMap<>();
 
-        HashMap<Ref, Set<Ref>> oldPrecToDeps = cellWiseGraph.first;
-        HashMap<Ref, Set<Ref>> oldDepToPrecs = cellWiseGraph.second;
+        HashMap<Ref, Set<Ref>> oldPrecToDeps = inputCellWiseGraph.first;
 
-        oldPrecToDeps.forEach((prec, depSet) -> {
-            HashSet<Ref> newDepSet = new HashSet<>();
-            newDepSet.addAll(depSet);
-            newPrecToDeps.put(prec, newDepSet);
-        });
+        List<Ref> rootCells = new LinkedList<>();
+        rootCells.add(startCell);
+        HashSet<Ref> visited = new HashSet<>();
 
-        oldDepToPrecs.forEach((dep, precSet) -> {
-            HashSet<Ref> newPrecSet = new HashSet<>();
-            newPrecSet.addAll(precSet);
-            newDepToPrecs.put(dep, newPrecSet);
-        });
+        while (!rootCells.isEmpty()) {
+            Ref rootCell = rootCells.remove(0);
+            Set<Ref> depSet = oldPrecToDeps.get(rootCell);
+            if (depSet != null) {
+                depSet.forEach(dep -> {
+                    insertNewGraph(newPrecToDeps, newDepToPrecs, rootCell, dep);
+                    if (!visited.contains(dep)) {
+                        visited.add(dep);
+                        rootCells.add(dep);
+                    }
+                });
+            }
+        }
 
         return new Pair<>(newPrecToDeps, newDepToPrecs);
     }
 
-    public static List<Ref> getSortedRefsByTopology(Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> cellWiseGraph,
+    private static void insertNewGraph(HashMap<Ref, Set<Ref>> newPrecToDeps,
+                                       HashMap<Ref, Set<Ref>> newDepToPrecs,
+                                       Ref prec, Ref dep) {
+        Set<Ref> depSet = newPrecToDeps.getOrDefault(prec, new HashSet<>());
+        depSet.add(dep);
+        newPrecToDeps.put(prec, depSet);
+
+        Set<Ref> precSet = newDepToPrecs.getOrDefault(dep, new HashSet<>());
+        precSet.add(prec);
+        newDepToPrecs.put(dep, precSet);
+    }
+
+    public static List<Ref> getSortedRefsByTopology(Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> inputCellWiseGraph,
                                              Ref startCell) {
-        HashMap<Ref, Set<Ref>> precToDeps = cellWiseGraph.first;
-        HashMap<Ref, Set<Ref>> depToPrecs = cellWiseGraph.second;
+        HashMap<Ref, Set<Ref>> precToDeps = inputCellWiseGraph.first;
+        HashMap<Ref, Set<Ref>> depToPrecs = inputCellWiseGraph.second;
 
         List<Ref> sortedCells = new LinkedList<>();
         List<Ref> rootCells = new LinkedList<>();

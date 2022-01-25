@@ -191,7 +191,7 @@ public class SheetAnalyzer {
 
     private Pair<Ref, Long> getRefWithLongestPathPerSheetData(SheetData sheetData) {
         Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> cellwiseDepGraph = sheetData.genCellWiseDepGraph();
-        HashMap<Ref, Set<Ref>> depToPrecs = cellwiseDepGraph.first;
+        HashMap<Ref, Set<Ref>> depToPrecs = cellwiseDepGraph.second;
 
         HashMap<Ref, Long> refToLength = genRefToLength(cellwiseDepGraph, SheetData.rootRef);
 
@@ -225,7 +225,7 @@ public class SheetAnalyzer {
         HashMap<Ref, Set<Ref>> precToDeps = cellwiseDepGraph.first;
 
         HashMap<Ref, Long> refToLength = new HashMap<>();
-        List<Ref> sortedRefs = SheetData.getSortedRefsByTopology(SheetData.replicateGraph(cellwiseDepGraph), startRef);
+        List<Ref> sortedRefs = SheetData.getSortedRefsByTopology(SheetData.replicateGraph(startRef, cellwiseDepGraph), startRef);
         sortedRefs.forEach(rootCell -> {
             Long curLength = refToLength.getOrDefault(rootCell, 0L);
             refToLength.put(rootCell, curLength);
