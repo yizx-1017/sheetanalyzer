@@ -233,10 +233,10 @@ public class PatternTools {
             case TYPENINE:
             case TYPETEN:
             case TYPEELEVEN:
-                row = inputRow + startRowOffset;
-                col = inputCol + startColOffset;
-                lastRow = inputLastRow + endRowOffset;
-                lastCol = inputLastCol + endColOffset;
+                row = inputRow + endRowOffset;
+                col = inputCol + endColOffset;
+                lastRow = inputLastRow + startRowOffset;
+                lastCol = inputLastCol + startColOffset;
                 if (patternType != PatternType.TYPEONE) {
                     int gapSize = patternType.ordinal() - PatternType.TYPEFIVE.ordinal() + 1;
                     retSet = findRefSetForGapType(prec.getBookName(), prec.getSheetName(),
@@ -252,17 +252,17 @@ public class PatternTools {
                 break;
 
             case TYPETWO: // relative start, fixed end
-                row = inputRow + startRowOffset;
-                col = inputCol + startColOffset;
-                lastRow = dep.getLastRow();
-                lastCol = dep.getLastColumn();
+                row = dep.getRow();
+                col = dep.getColumn();
+                lastRow = inputLastRow + startRowOffset;
+                lastCol = inputLastCol + startColOffset;
                 break;
 
             case TYPETHREE: // fixed start, relative end
-                row = dep.getRow();
-                col = dep.getColumn();
-                lastRow = inputLastRow + endRowOffset;
-                lastCol = inputLastCol + endColOffset;
+                row = inputRow + endRowOffset;
+                col = inputCol + endColOffset;
+                lastRow = dep.getLastRow();
+                lastCol = dep.getLastColumn();
                 break;
 
             default: //case TYPEFOUR: fixed start, fixed end
@@ -276,10 +276,11 @@ public class PatternTools {
 
         assert edgeMeta.patternType != PatternType.NOTYPE || (row == lastRow && col == lastCol);
 
-        retSet.add(new RefImpl(
+        Ref result = new RefImpl(
                 prec.getBookName(),
                 prec.getSheetName(),
-                row, col, lastRow, lastCol).getOverlap(dep));
+                row, col, lastRow, lastCol).getOverlap(dep);
+        retSet.add(result);
 
         return retSet;
     }
@@ -335,24 +336,24 @@ public class PatternTools {
         switch (patternType) {
 
             case TYPEONE: // relative start, relative end
-                row = depRange.getRow() - endRowOffset;
-                col = depRange.getColumn() - endColOffset;
-                lastRow = depRange.getLastRow() - startRowOffset;
-                lastCol = depRange.getLastColumn() - startColOffset;
+                row = depRange.getRow() - startRowOffset;
+                col = depRange.getColumn() - startColOffset;
+                lastRow = depRange.getLastRow() - endRowOffset;
+                lastCol = depRange.getLastColumn() - endColOffset;
                 break;
 
             case TYPETWO: // relative start, fixed end
-                row = prec.getRow();
-                col = prec.getColumn();
-                lastRow = depRange.getLastRow() - startRowOffset;
-                lastCol = depRange.getLastColumn() - startColOffset;
+                row = depRange.getRow() - startRowOffset;
+                col = depRange.getColumn() - startColOffset;
+                lastRow = prec.getLastRow();
+                lastCol = prec.getLastColumn();
                 break;
 
             case TYPETHREE: // fixed start, relative end
-                row = depRange.getRow() - endRowOffset;
-                col = depRange.getColumn() - endColOffset;
-                lastRow = prec.getLastRow();
-                lastCol = prec.getLastColumn();
+                row = prec.getRow();
+                col = prec.getColumn();
+                lastRow = depRange.getLastRow() - endRowOffset;
+                lastCol = depRange.getLastColumn() - endColOffset;
                 break;
 
             default: // TYPEFOUR: fixed start, fixed end
@@ -364,10 +365,11 @@ public class PatternTools {
                 break;
         }
 
-        return new RefImpl(
+        Ref result = new RefImpl(
                 prec.getBookName(),
                 prec.getSheetName(),
                 row, col, lastRow, lastCol).getOverlap(prec);
+        return result;
     }
 
     public static Ref findValidGapRef(Ref ref, Ref subRef, int gapSize) {
