@@ -218,8 +218,8 @@ public class PatternTools {
         if (edgeMeta.patternType != PatternType.TYPEZERO)
             patternType = edgeMeta.patternType;
         else { // TYPEZERO
-            if (startRowOffset == 1 || startColOffset == 1) patternType = PatternType.TYPETWO;
-            else if (startRowOffset == -1 || startColOffset == -1) patternType = PatternType.TYPETHREE;
+            if (startRowOffset == 1 || startColOffset == 1) patternType = PatternType.TYPETHREE;
+            else if (startRowOffset == -1 || startColOffset == -1) patternType = PatternType.TYPETWO;
             else throw new RuntimeException("TYPE ZERO offset (" + startRowOffset + ","
                         + startColOffset + ") wrong");
         }
@@ -327,8 +327,8 @@ public class PatternTools {
             patternType = edgeMeta.patternType;
         else { // TYPEZERO
             if (isDirectPrec) patternType = PatternType.TYPEONE;
-            else if (startRowOffset == 1 || startColOffset == 1) patternType = PatternType.TYPETWO;
-            else if (startRowOffset == -1 || startColOffset == -1) patternType = PatternType.TYPETHREE;
+            else if (startRowOffset == 1 || startColOffset == 1) patternType = PatternType.TYPETHREE;
+            else if (startRowOffset == -1 || startColOffset == -1) patternType = PatternType.TYPETWO;
             else throw new RuntimeException("TYPE ZERO offset (" + startRowOffset + ","
                         + startColOffset + ") wrong");
         }
