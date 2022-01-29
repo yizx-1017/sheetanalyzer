@@ -4,6 +4,7 @@ import org.dataspread.sheetanalyzer.SheetAnalyzer;
 import org.dataspread.sheetanalyzer.dependency.util.PatternType;
 import org.dataspread.sheetanalyzer.util.Pair;
 import org.dataspread.sheetanalyzer.util.Ref;
+import org.dataspread.sheetanalyzer.util.RefImpl;
 
 import java.io.PrintWriter;
 
@@ -19,8 +20,8 @@ public class MainTestUtil {
         long numCompEdges = sheetAnalyzer.getNumCompEdges();
         long numCompVertices = sheetAnalyzer.getNumCompVertices();
 
-        Pair<Ref, Long> mostDeps = null;
-        Pair<Ref, Long> longestDeps = null;
+        Pair<Ref, Long> mostDeps = new Pair(new RefImpl(-1, -1), 0);
+        Pair<Ref, Long> longestDeps = new Pair(new RefImpl(-1, -1), 0);
 
         long[] numCompEdgesPerPattern = new long[PatternType.values().length];
         long[] numEdgesPerPattern = new long[PatternType.values().length];
@@ -74,5 +75,12 @@ public class MainTestUtil {
             }
             statPW.write(stringBuilder.toString());
         }
+    }
+
+    public static Ref cellStringToRef(String cellString) {
+        int colIndex = cellString.charAt(0) - 'A';
+        int rowIndex = Integer.parseInt(cellString.substring(1)) - 1;
+
+        return new RefImpl(rowIndex, colIndex);
     }
 }

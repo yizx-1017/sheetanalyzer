@@ -49,13 +49,13 @@ public class SheetAnalyzer {
                     depGraph.setDoCompression(inRowOnly);
                 }
                 Ref dep = depPair.first;
-                HashSet<Ref> precSet = depPair.second;
-                precSet.forEach(prec -> {
+                List<Ref> precList = depPair.second;
+                precList.forEach(prec -> {
                     depGraph.add(prec, dep);
                     numEdges += 1;
                 });
                 refSet.add(dep);
-                refSet.addAll(precSet);
+                refSet.addAll(precList);
             });
             depGraph.setDoCompression(true);
             inputDepGraphMap.put(sheetName, depGraph);
@@ -63,9 +63,9 @@ public class SheetAnalyzer {
         });
     }
 
-    private boolean isInRowOnly(Pair<Ref, HashSet<Ref>> depPair) {
+    private boolean isInRowOnly(Pair<Ref, List<Ref>> depPair) {
         Ref dep = depPair.first;
-        HashSet<Ref> precSet = depPair.second;
+        List<Ref> precSet = depPair.second;
         int rowIndex = dep.getRow();
         AtomicBoolean isInRowOnly = new AtomicBoolean(true);
         precSet.forEach(prec -> {
@@ -77,8 +77,24 @@ public class SheetAnalyzer {
 
     public String getFileName() { return fileName; }
 
+    public Set<String> getSheetNames() {
+        return depGraphMap.keySet();
+    }
+
     public HashMap<String, DependencyGraph> getDependencyGraphs() {
         return depGraphMap;
+    }
+
+    public HashMap<String, String> getTacoBreakdown() {
+        HashMap<String, String> tacoMap = new HashMap<>();
+        depGraphMap.forEach((sheetName, depGraph) -> {
+            if (depGraph instanceof DependencyGraphTACO) {
+                tacoMap.put(sheetName, ((DependencyGraphTACO) depGraph).getTACOBreakdown());
+            } else {
+                tacoMap.put(sheetName, "TACO not used");
+            }
+        });
+        return tacoMap;
     }
 
     public Set<Ref> getDependents(String sheetName, Ref ref) {
@@ -137,6 +153,10 @@ public class SheetAnalyzer {
         return numOfFormulae.get();
     }
 
+    public Long getNumDependents(String sheetName, Ref ref) {
+        return (long) this.getDependents(sheetName, ref).stream().mapToInt(Ref::getCellCount).sum();
+    }
+
     /* Return the cell that has the longest org.dataspread.sheetanalyzer.dependency chain
     * */
     public Pair<Ref, Long> getRefWithLongestDepChain() {
@@ -154,23 +174,26 @@ public class SheetAnalyzer {
         return new Pair<>(retRef.get(), maxDepLength.get());
     }
 
+    public Long getLongestPathLength(String sheetName, Ref startRef) {
+        SheetData sheetData = sheetDataMap.get(sheetName);
+        Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> cellwiseDepGraph = sheetData.genCellWiseDepGraph();
+        HashMap<Ref, Long> refToLength = genRefToLength(cellwiseDepGraph, startRef);
+
+        AtomicReference<Long> maxLength = new AtomicReference<>(0L);
+        refToLength.forEach((curRef, curLength) -> {
+            if (curLength > maxLength.get()) {
+                maxLength.set(curLength);
+            }
+        });
+
+        return maxLength.get();
+    }
+
     private Pair<Ref, Long> getRefWithLongestPathPerSheetData(SheetData sheetData) {
-        long maxRange = 100;
-        Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> cellwiseDepGraph = sheetData.genCellWiseDepGraph(maxRange);
-        HashMap<Ref, Set<Ref>> precToDeps = cellwiseDepGraph.first;
+        Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> cellwiseDepGraph = sheetData.genCellWiseDepGraph();
         HashMap<Ref, Set<Ref>> depToPrecs = cellwiseDepGraph.second;
 
-        HashMap<Ref, Long> refToLength = new HashMap<>();
-        List<Ref> sortedRefs = sheetData.getSortedRefsByTopology(sheetData.replicateGraph(cellwiseDepGraph));
-        sortedRefs.forEach(rootCell -> {
-            Long curLength = refToLength.getOrDefault(rootCell, 0L);
-            refToLength.put(rootCell, curLength);
-            precToDeps.getOrDefault(rootCell, new HashSet<>()).forEach(dep -> {
-                Long depLength = refToLength.getOrDefault(dep, curLength + 1L);
-                if (depLength < curLength + 1L) depLength = curLength + 1;
-                refToLength.put(dep, depLength);
-            });
-        });
+        HashMap<Ref, Long> refToLength = genRefToLength(cellwiseDepGraph, SheetData.rootRef);
 
         AtomicReference<Ref> maxRef = new AtomicReference<>();
         AtomicReference<Long> maxLength = new AtomicReference<>(0L);
@@ -195,6 +218,25 @@ public class SheetAnalyzer {
         }
 
         return new Pair<>(curRef, maxLength.get() - 1);
+    }
+
+    private HashMap<Ref, Long> genRefToLength(Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> cellwiseDepGraph,
+                                              Ref startRef) {
+        HashMap<Ref, Set<Ref>> precToDeps = cellwiseDepGraph.first;
+
+        HashMap<Ref, Long> refToLength = new HashMap<>();
+        List<Ref> sortedRefs = SheetData.getSortedRefsByTopology(SheetData.replicateGraph(startRef, cellwiseDepGraph), startRef);
+        sortedRefs.forEach(rootCell -> {
+            Long curLength = refToLength.getOrDefault(rootCell, 0L);
+            refToLength.put(rootCell, curLength);
+            precToDeps.getOrDefault(rootCell, new HashSet<>()).forEach(dep -> {
+                Long depLength = refToLength.getOrDefault(dep, curLength + 1L);
+                if (depLength < curLength + 1L) depLength = curLength + 1;
+                refToLength.put(dep, depLength);
+            });
+        });
+
+        return refToLength;
     }
 
     /* Return the cell that has the largest number of dependencies

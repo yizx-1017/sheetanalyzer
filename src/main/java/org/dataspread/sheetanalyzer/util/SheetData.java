@@ -9,18 +9,20 @@ public class SheetData {
     private int maxRows;
     private int maxCols;
 
-    private final HashMap<Ref, HashSet<Ref>> sheetDeps = new HashMap<>();
+    private final HashMap<Ref, List<Ref>> sheetDeps = new HashMap<>();
     private final HashMap<Ref, Integer> formulaNumRefs = new HashMap<>();
     private final HashMap<Ref, CellContent> sheetContent = new HashMap<>();
     private final HashSet<Ref> accessAreaCache = new HashSet<>();
+    private Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> cellWiseGraph = null;
 
     public static final Ref rootRef = new RefImpl(-1, -1);
+    private final long maxRange = 100;
 
     public SheetData(String sheetName) {
         this.sheetName = sheetName;
     }
 
-    public static Comparator<Pair<Ref, HashSet<Ref>>> rowWiseComp =
+    public static Comparator<Pair<Ref, List<Ref>>> rowWiseComp =
             (pairA, pairB) -> {
                 Ref refA = pairA.first;
                 Ref refB = pairB.first;
@@ -30,7 +32,7 @@ public class SheetData {
                 else return rowResult;
             };
 
-    public static Comparator<Pair<Ref, HashSet<Ref>>> colWiseComp =
+    public static Comparator<Pair<Ref, List<Ref>>> colWiseComp =
             (pairA, pairB) -> {
                 Ref refA = pairA.first;
                 Ref refB = pairB.first;
@@ -40,8 +42,8 @@ public class SheetData {
                 else return colResult;
             };
 
-    public void addDeps(Ref dep, HashSet<Ref> precSet) {
-        sheetDeps.put(dep, precSet);
+    public void addDeps(Ref dep, List<Ref> precList) {
+        sheetDeps.put(dep, precList);
     }
 
     public void addFormulaNumRef(Ref dep, int numRefs) {
@@ -60,17 +62,13 @@ public class SheetData {
         return accessAreaCache.contains(areaRef);
     }
 
-    public List<Pair<Ref, HashSet<Ref>>> getSortedDepPairs(boolean rowWise) {
-        LinkedList<Pair<Ref, HashSet<Ref>>> depPairList = new LinkedList<>();
-        sheetDeps.forEach((Ref dep, HashSet<Ref> precSet) -> {
-            depPairList.add(new Pair<>(dep, precSet));
+    public List<Pair<Ref, List<Ref>>> getSortedDepPairs(boolean rowWise) {
+        LinkedList<Pair<Ref, List<Ref>>> depPairList = new LinkedList<>();
+        sheetDeps.forEach((Ref dep, List<Ref> precList) -> {
+            depPairList.add(new Pair<>(dep, precList));
         });
         if (rowWise) depPairList.sort(rowWiseComp);
         else depPairList.sort(colWiseComp);
-        Pair a = null;
-        if (!depPairList.isEmpty()) {
-            a = depPairList.getLast();
-        }
         return depPairList;
     }
 
@@ -82,8 +80,8 @@ public class SheetData {
         Set<Ref> valueOnlyPrecSet = new HashSet<>();
         Set<Ref> areaSet = new HashSet<>();
 
-        sheetDeps.forEach((Ref dep, Set<Ref> precSet) -> {
-            precSet.forEach(prec -> {
+        sheetDeps.forEach((Ref dep, List<Ref> precList) -> {
+            precList.forEach(prec -> {
                 if (!areaSet.contains(prec)) {
                     areaSet.add(prec);
                     valueOnlyPrecSet.addAll(toCellSet(prec));
@@ -107,78 +105,101 @@ public class SheetData {
         return cellSet;
     }
 
-    public Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> genCellWiseDepGraph(long maxRange) {
-        Set<Ref> valueCells = new HashSet<>();
+    public Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> genCellWiseDepGraph() {
+        if (cellWiseGraph == null) {
 
-        HashMap<Ref, Set<Ref>> precToDeps = new HashMap<>();
-        HashMap<Ref, Set<Ref>> depToPrecs = new HashMap<>();
+            Set<Ref> valueCells = new HashSet<>();
 
-        sheetDeps.forEach((dep, precSet) -> {
-            precSet.forEach(precRange -> {
-                int numCells = 0;
-                for (int row = precRange.getRow(); row <= precRange.getLastRow(); row++) {
-                    for (int col = precRange.getColumn(); col <= precRange.getLastColumn(); col++) {
-                        Ref prec = new RefImpl(row, col);
-                        CellContent cc = sheetContent.get(prec);
-                        if (!cc.isFormula || (formulaNumRefs.get(prec) == 0))
-                            valueCells.add(prec);
+            HashMap<Ref, Set<Ref>> precToDeps = new HashMap<>();
+            HashMap<Ref, Set<Ref>> depToPrecs = new HashMap<>();
 
-                        // add to precToDeps
-                        Set<Ref> deps = precToDeps.getOrDefault(prec, new HashSet<>());
-                        deps.add(dep);
-                        precToDeps.putIfAbsent(prec, deps);
+            sheetDeps.forEach((dep, precSet) -> {
+                precSet.forEach(precRange -> {
+                    int numCells = 0;
+                    for (int row = precRange.getRow(); row <= precRange.getLastRow(); row++) {
+                        for (int col = precRange.getColumn(); col <= precRange.getLastColumn(); col++) {
+                            Ref prec = new RefImpl(row, col);
+                            CellContent cc = sheetContent.get(prec);
+                            if (!cc.isFormula || (formulaNumRefs.get(prec) == 0))
+                                valueCells.add(prec);
 
-                        // add to depToPrecs
-                        Set<Ref> precs = depToPrecs.getOrDefault(dep, new HashSet<>());
-                        precs.add(prec);
-                        depToPrecs.putIfAbsent(dep, precs);
+                            // add to precToDeps
+                            Set<Ref> deps = precToDeps.getOrDefault(prec, new HashSet<>());
+                            deps.add(dep);
+                            precToDeps.putIfAbsent(prec, deps);
 
-                        numCells += 1;
+                            // add to depToPrecs
+                            Set<Ref> precs = depToPrecs.getOrDefault(dep, new HashSet<>());
+                            precs.add(prec);
+                            depToPrecs.putIfAbsent(dep, precs);
+
+                            numCells += 1;
+                        }
+                        if (numCells >= maxRange) break;
                     }
-                    if (numCells >= maxRange) break;
-                }
+                });
             });
-        });
 
-        precToDeps.put(rootRef, valueCells);
-        valueCells.forEach(valueCell -> {
-            Set<Ref> precSet = new HashSet<>();
-            precSet.add(rootRef);
-            depToPrecs.put(valueCell, precSet);
-        });
+            precToDeps.put(rootRef, valueCells);
+            valueCells.forEach(valueCell -> {
+                Set<Ref> precSet = new HashSet<>();
+                precSet.add(rootRef);
+                depToPrecs.put(valueCell, precSet);
+            });
 
-        return new Pair<>(precToDeps, depToPrecs);
+            cellWiseGraph = new Pair<>(precToDeps, depToPrecs);
+        }
+        return cellWiseGraph;
     }
 
-    public Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> replicateGraph(Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> cellWiseGraph) {
+    public static Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> replicateGraph(Ref startCell,
+                                                                                      Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> inputCellWiseGraph) {
         HashMap<Ref, Set<Ref>> newPrecToDeps = new HashMap<>();
         HashMap<Ref, Set<Ref>> newDepToPrecs = new HashMap<>();
 
-        HashMap<Ref, Set<Ref>> oldPrecToDeps = cellWiseGraph.first;
-        HashMap<Ref, Set<Ref>> oldDepToPrecs = cellWiseGraph.second;
+        HashMap<Ref, Set<Ref>> oldPrecToDeps = inputCellWiseGraph.first;
 
-        oldPrecToDeps.forEach((prec, depSet) -> {
-            HashSet<Ref> newDepSet = new HashSet<>();
-            newDepSet.addAll(depSet);
-            newPrecToDeps.put(prec, newDepSet);
-        });
+        List<Ref> rootCells = new LinkedList<>();
+        rootCells.add(startCell);
+        HashSet<Ref> visited = new HashSet<>();
 
-        oldDepToPrecs.forEach((dep, precSet) -> {
-            HashSet<Ref> newPrecSet = new HashSet<>();
-            newPrecSet.addAll(precSet);
-            newDepToPrecs.put(dep, newPrecSet);
-        });
+        while (!rootCells.isEmpty()) {
+            Ref rootCell = rootCells.remove(0);
+            Set<Ref> depSet = oldPrecToDeps.get(rootCell);
+            if (depSet != null) {
+                depSet.forEach(dep -> {
+                    insertNewGraph(newPrecToDeps, newDepToPrecs, rootCell, dep);
+                    if (!visited.contains(dep)) {
+                        visited.add(dep);
+                        rootCells.add(dep);
+                    }
+                });
+            }
+        }
 
         return new Pair<>(newPrecToDeps, newDepToPrecs);
     }
 
-    public List<Ref> getSortedRefsByTopology(Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> cellWiseGraph) {
-        HashMap<Ref, Set<Ref>> precToDeps = cellWiseGraph.first;
-        HashMap<Ref, Set<Ref>> depToPrecs = cellWiseGraph.second;
+    private static void insertNewGraph(HashMap<Ref, Set<Ref>> newPrecToDeps,
+                                       HashMap<Ref, Set<Ref>> newDepToPrecs,
+                                       Ref prec, Ref dep) {
+        Set<Ref> depSet = newPrecToDeps.getOrDefault(prec, new HashSet<>());
+        depSet.add(dep);
+        newPrecToDeps.put(prec, depSet);
+
+        Set<Ref> precSet = newDepToPrecs.getOrDefault(dep, new HashSet<>());
+        precSet.add(prec);
+        newDepToPrecs.put(dep, precSet);
+    }
+
+    public static List<Ref> getSortedRefsByTopology(Pair<HashMap<Ref, Set<Ref>>, HashMap<Ref, Set<Ref>>> inputCellWiseGraph,
+                                             Ref startCell) {
+        HashMap<Ref, Set<Ref>> precToDeps = inputCellWiseGraph.first;
+        HashMap<Ref, Set<Ref>> depToPrecs = inputCellWiseGraph.second;
 
         List<Ref> sortedCells = new LinkedList<>();
         List<Ref> rootCells = new LinkedList<>();
-        rootCells.add(rootRef);
+        rootCells.add(startCell);
 
         while (!rootCells.isEmpty()) {
             Ref rootCell = rootCells.remove(0);
@@ -207,7 +228,7 @@ public class SheetData {
     public int getMaxRows() {return maxRows;}
     public int getMaxCols() {return maxCols;}
 
-    public HashSet<Ref> getPrecSet(Ref dep) {
+    public List<Ref> getPrecSet(Ref dep) {
         return sheetDeps.get(dep);
     }
 
