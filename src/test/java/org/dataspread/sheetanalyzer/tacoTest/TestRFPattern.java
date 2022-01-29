@@ -83,15 +83,11 @@ public class TestRFPattern {
         int queryRow = maxRows - 1, queryColumn = 0;
         Ref queryRef = new RefImpl(queryRow, queryColumn);
         Set<Ref> queryResult = sheetAnalyzer.getDependents(sheetName, queryRef);
-        System.out.println(queryResult);
 
         Set<Ref> groundTruth = new HashSet<>();
         int firstRow = 0, firstColumn = 2;
         int lastRow = maxRows - 1, lastColumn = 2;
         groundTruth.add(new RefImpl(firstRow, firstColumn, lastRow, lastColumn));
-        System.out.println(groundTruth.size());
-        System.out.println(queryResult.size());
-
         Assertions.assertTrue(TestUtil.hasSameRefs(groundTruth, queryResult));
     }
 }
