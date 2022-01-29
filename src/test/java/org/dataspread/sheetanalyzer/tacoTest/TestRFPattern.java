@@ -28,7 +28,7 @@ public class TestRFPattern {
     private static final String sheetName = "RFSheet";
     private static final int maxRows = 1000;
 
-    private static File createRRSheet() throws IOException {
+    private static File createRFSheet() throws IOException {
         Workbook workbook = new HSSFWorkbook();
         Sheet sheet = workbook.createSheet(sheetName);
         int colA = 0, colB = 1, colC = 2;
@@ -45,8 +45,6 @@ public class TestRFPattern {
 
         File xlsTempFile = TestUtil.createXlsTempFile();
         FileOutputStream outputStream = new FileOutputStream(xlsTempFile);
-        FileOutputStream testStream = new FileOutputStream("RFSheet.xls");
-        workbook.write(testStream);
         workbook.write(outputStream);
         workbook.close();
 
@@ -55,7 +53,7 @@ public class TestRFPattern {
 
     @BeforeAll
     public static void setUp() throws IOException, SheetNotSupportedException {
-        File xlsTempFile = createRRSheet();
+        File xlsTempFile = createRFSheet();
         boolean inRowCompression = false;
         sheetAnalyzer = new SheetAnalyzer(xlsTempFile.getAbsolutePath(), inRowCompression);
     }
