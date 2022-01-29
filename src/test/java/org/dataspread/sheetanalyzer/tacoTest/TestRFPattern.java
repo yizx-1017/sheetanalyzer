@@ -18,12 +18,13 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 public class TestRFPattern {
 
-  private static SheetAnalyzer sheetAnalyzer;
+    private static SheetAnalyzer sheetAnalyzer;
     private static final String sheetName = "RFSheet";
     private static final int maxRows = 1000;
 
@@ -44,7 +45,7 @@ public class TestRFPattern {
 
         File xlsTempFile = TestUtil.createXlsTempFile();
         FileOutputStream outputStream = new FileOutputStream(xlsTempFile);
-        FileOutputStream testStream = new FileOutputStream("test.xls");
+        FileOutputStream testStream = new FileOutputStream("RFSheet.xls");
         workbook.write(testStream);
         workbook.write(outputStream);
         workbook.close();
@@ -59,17 +60,37 @@ public class TestRFPattern {
         sheetAnalyzer = new SheetAnalyzer(xlsTempFile.getAbsolutePath(), inRowCompression);
     }
 
-     @Test
-    public void verifyDependencyA() {
-        int queryRow = 1, queryColumn = 0;
+    /**
+     * A1 and B1 of RF pattern is only referenced by cell C1.
+     */
+    @Test
+    public void verifyFirstRowDependency() {
+        int queryRow = 0, queryColumn = 0;
         Ref queryRef = new RefImpl(queryRow, queryColumn);
         Set<Ref> queryResult = sheetAnalyzer.getDependents(sheetName, queryRef);
 
+
         Set<Ref> groundTruth = new HashSet<>();
-        int firstRow = 0, firstColumn = 1;
-        int lastRow = 1, lastColumn = 1;
+        int firstRow = 0, firstColumn = 2;
+        int lastRow = 0, lastColumn = 2;
         groundTruth.add(new RefImpl(firstRow, firstColumn, lastRow, lastColumn));
-        System.out.println(queryResult.toString());
+
+        Assertions.assertTrue(TestUtil.hasSameRefs(groundTruth, queryResult));
+    }
+
+    @Test
+    public void verifyLastRowDependencies() {
+        int queryRow = maxRows - 1, queryColumn = 0;
+        Ref queryRef = new RefImpl(queryRow, queryColumn);
+        Set<Ref> queryResult = sheetAnalyzer.getDependents(sheetName, queryRef);
+        System.out.println(queryResult);
+
+        Set<Ref> groundTruth = new HashSet<>();
+        int firstRow = 0, firstColumn = 2;
+        int lastRow = maxRows - 1, lastColumn = 2;
+        groundTruth.add(new RefImpl(firstRow, firstColumn, lastRow, lastColumn));
+        System.out.println(groundTruth.size());
+        System.out.println(queryResult.size());
 
         Assertions.assertTrue(TestUtil.hasSameRefs(groundTruth, queryResult));
     }
