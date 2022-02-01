@@ -3,12 +3,13 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>org.dataspread.sheetanalyzer</groupId>
+	<groupId>io.github.dataspread</groupId>
 	<artifactId>sheetanalyzer</artifactId>
-	<packaging>jar</packaging>
-	<version>0.0.1</version>
-	<name>Spreadsheet Analyzer</name>
+	<version>1.0.0</version>
+
+	<name>${project.artifactId}</name>
 	<description>Spreadsheet Analyzer</description>
+	<packaging>jar</packaging>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
