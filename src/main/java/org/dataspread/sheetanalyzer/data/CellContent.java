@@ -1,4 +1,4 @@
-package org.dataspread.sheetanalyzer.util;
+package org.dataspread.sheetanalyzer.data;
 
 public class CellContent {
     final String value;

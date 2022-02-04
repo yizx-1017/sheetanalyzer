@@ -1,6 +1,6 @@
 package org.dataspread.sheetanalyzer.util;
 
 public class Catalog {
-    static String bookName = "default";
-    static String sheetName = "default";
+    static String defaultBookname = "default";
+    static String defaultSheetname = "default";
 }

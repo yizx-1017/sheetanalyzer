@@ -53,7 +53,7 @@ public class TestRRGapTwoPattern {
     public static void setUp() throws IOException, SheetNotSupportedException {
         File xlsTempFile = createRRGapTwoSheet();
         boolean inRowCompression = false;
-        sheetAnalyzer = new SheetAnalyzer(xlsTempFile.getAbsolutePath(), inRowCompression);
+        sheetAnalyzer = SheetAnalyzer.createSheetAnalyzer(xlsTempFile.getAbsolutePath());
     }
 
     @Test

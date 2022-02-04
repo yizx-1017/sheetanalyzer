@@ -54,8 +54,7 @@ public class TestXlsxParsing {
     @BeforeAll
     public static void setUp() throws IOException, SheetNotSupportedException {
         File xlsxTempFile = createXLSXSheet();
-        boolean inRowCompression = false;
-        sheetAnalyzer = new SheetAnalyzer(xlsxTempFile.getAbsolutePath(), inRowCompression);
+        sheetAnalyzer = SheetAnalyzer.createSheetAnalyzer(xlsxTempFile.getAbsolutePath());
     }
 
     @Test

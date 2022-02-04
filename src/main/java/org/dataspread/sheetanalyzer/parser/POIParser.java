@@ -10,12 +10,13 @@ import org.apache.poi.ss.formula.ptg.*;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFEvaluationWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.dataspread.sheetanalyzer.data.CellContent;
+import org.dataspread.sheetanalyzer.data.SheetData;
 import org.dataspread.sheetanalyzer.util.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -71,7 +72,7 @@ public class POIParser implements SpreadsheetParser {
         return totalRows <= threshold;
     }
 
-    private void parseSpreadsheet() {
+    private void parseSpreadsheet() throws SheetNotSupportedException {
         for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
             SheetData sheetData = parseOneSheet(workbook.getSheetAt(i));
             sheetDataMap.put(workbook.getSheetAt(i).getSheetName()
@@ -79,7 +80,7 @@ public class POIParser implements SpreadsheetParser {
         }
     }
 
-    private SheetData parseOneSheet(Sheet sheet) {
+    private SheetData parseOneSheet(Sheet sheet) throws SheetNotSupportedException {
         SheetData sheetData = new SheetData(sheet.getSheetName());
         int maxRows = 0;
         int maxCols = 0;
@@ -117,36 +118,30 @@ public class POIParser implements SpreadsheetParser {
         }
     }
 
-    private void parseOneFormulaCell(SheetData sheetData, Cell cell) {
+    private void parseOneFormulaCell(SheetData sheetData, Cell cell) throws SheetNotSupportedException {
         Ref dep = new RefImpl(cell.getRowIndex(), cell.getColumnIndex());
-        try {
-            Ptg[] tokens = this.getTokens(cell);
-            List<Ref> precList = new LinkedList<>();
-            int numRefs = 0;
-            if (tokens != null) {
-                for (Ptg token : tokens) {
-                    if (token instanceof OperandPtg) {
-                        Ref prec = parseOneToken(cell, (OperandPtg) token, sheetData);
-                        if (prec != null) {
-                            numRefs += 1;
-                            precList.add(prec);
-                        }
+        Ptg[] tokens = this.getTokens(cell);
+        List<Ref> precList = new LinkedList<>();
+        int numRefs = 0;
+        if (tokens != null) {
+            for (Ptg token : tokens) {
+                if (token instanceof OperandPtg) {
+                    Ref prec = parseOneToken(cell, (OperandPtg) token, sheetData);
+                    if (prec != null) {
+                        numRefs += 1;
+                        precList.add(prec);
                     }
                 }
             }
-
-            if (!precList.isEmpty())
-                sheetData.addDeps(dep, precList);
-            sheetData.addFormulaNumRef(dep, numRefs);
-            CellContent cellContent = new CellContent("",
-                    cell.getCellFormula(), true);
-            sheetData.addContent(dep, cellContent);
-
-        } catch (SheetNotSupportedException e) {
-            CellContent cellContent = new CellContent("",
-                    "", false);
-            sheetData.addContent(dep, cellContent);
         }
+
+        if (!precList.isEmpty())
+            sheetData.addDeps(dep, precList);
+        sheetData.addFormulaNumRef(dep, numRefs);
+        CellContent cellContent = new CellContent("",
+                cell.getCellFormula(), true);
+        sheetData.addContent(dep, cellContent);
+
     }
 
     private Ref parseOneToken(Cell cell, OperandPtg token,

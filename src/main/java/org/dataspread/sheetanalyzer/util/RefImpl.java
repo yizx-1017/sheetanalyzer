@@ -30,12 +30,12 @@ public class RefImpl implements Ref, Serializable {
 	}
 
 	public RefImpl(int row, int column) {
-		this(RefType.CELL, Catalog.bookName, Catalog.sheetName, null, row, column, row, column);
+		this(RefType.CELL, Catalog.defaultBookname, Catalog.defaultSheetname, null, row, column, row, column);
 	}
 
 	public RefImpl(int row, int column, int lastRow, int lastColumn) {
-		this((row==lastRow&&column==lastColumn)?RefType.CELL:RefType.AREA, Catalog.bookName,
-				Catalog.sheetName, null, row, column, lastRow,lastColumn);
+		this((row==lastRow&&column==lastColumn)?RefType.CELL:RefType.AREA, Catalog.defaultBookname,
+				Catalog.defaultSheetname, null, row, column, lastRow,lastColumn);
 	}
 
 	public RefImpl(String bookName, String sheetName, int row, int column,

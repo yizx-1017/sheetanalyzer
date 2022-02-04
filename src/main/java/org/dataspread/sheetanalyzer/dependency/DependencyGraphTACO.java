@@ -23,9 +23,6 @@ public class DependencyGraphTACO implements DependencyGraph {
     protected HashMap<Ref, List<RefWithMeta>> depToPrecList = new HashMap<>();
     private RTree<Ref, Rectangle> _rectToRef = RTree.create();
 
-    private boolean doCompression = true;
-    private boolean inRowCompression = false;
-
     private final CompressInfoComparator compressInfoComparator = new CompressInfoComparator();
 
     public HashMap<Ref, List<RefWithMeta>> getCompressedGraph() {
@@ -68,13 +65,6 @@ public class DependencyGraphTACO implements DependencyGraph {
         }
     }
 
-    private Boolean isContained(RTree<Ref, Rectangle> resultSet, Ref input) {
-        return resultSet.search(getRectangleFromRef(input)).exists(entry -> {
-                    Ref ref = entry.value();
-                    return isSubsume(ref, input);
-        }).toBlocking().single();
-    }
-
     private LinkedList<Ref> getNonOverlapRef(RTree<Ref, Rectangle> resultSet, Ref input) {
         LinkedList<Ref> retRefList = new LinkedList<>();
         retRefList.addLast(input);
@@ -113,9 +103,8 @@ public class DependencyGraphTACO implements DependencyGraph {
     }
 
     public void add(Ref precedent, Ref dependent) {
-        LinkedList<CompressInfo> compressInfoList = new LinkedList<>();
-        if (doCompression)
-            compressInfoList = findCompressInfo(precedent, dependent);
+        LinkedList<CompressInfo> compressInfoList =
+                findCompressInfo(precedent, dependent);
         if (compressInfoList.isEmpty()) {
             insertMemEntry(precedent, dependent,
                     new EdgeMeta(PatternType.NOTYPE, Offset.noOffset, Offset.noOffset));
@@ -154,14 +143,6 @@ public class DependencyGraphTACO implements DependencyGraph {
             Ref dep = oneEdge.second;
             add(prec, dep);
         });
-    }
-
-    public void setInRowCompression(boolean inRowCompression) {
-        this.inRowCompression = inRowCompression;
-    }
-
-    public void setDoCompression(boolean doCompression) {
-        this.doCompression = doCompression;
     }
 
     private void updateOneCompressEntry(CompressInfo selectedInfo) {
@@ -406,23 +387,21 @@ public class DependencyGraphTACO implements DependencyGraph {
             });
         });
 
-        if (!inRowCompression) {
-            for (int i = 0; i < PatternType.NOTYPE.ordinal()
-                    - PatternType.TYPEFIVE.ordinal(); i++) {
-                int gapSize = i + 1;
-                PatternType patternType =
-                        PatternType.values()[PatternType.TYPEFIVE.ordinal() + i];
-                if (compressInfoList.isEmpty()) {
-                    findOverlapAndAdjacency(dep, gapSize).forEach(candDep -> {
-                        findPrecs(candDep).forEach(candPrecWithMeta -> {
-                            CompressInfo compRes = findCompressionPatternWithGap(prec, dep,
-                                    candPrecWithMeta.getRef(), candDep,
-                                    candPrecWithMeta.getEdgeMeta(), gapSize, patternType);
-                            addToCompressionInfoList(compressInfoList, compRes);
-                        });
+        for (int i = 0; i < PatternType.NOTYPE.ordinal()
+                - PatternType.TYPEFIVE.ordinal(); i++) {
+            int gapSize = i + 1;
+            PatternType patternType =
+                    PatternType.values()[PatternType.TYPEFIVE.ordinal() + i];
+            if (compressInfoList.isEmpty()) {
+                findOverlapAndAdjacency(dep, gapSize).forEach(candDep -> {
+                    findPrecs(candDep).forEach(candPrecWithMeta -> {
+                        CompressInfo compRes = findCompressionPatternWithGap(prec, dep,
+                                candPrecWithMeta.getRef(), candDep,
+                                candPrecWithMeta.getEdgeMeta(), gapSize, patternType);
+                        addToCompressionInfoList(compressInfoList, compRes);
                     });
-                } else break;
-            }
+                });
+            } else break;
         }
 
         return compressInfoList;
@@ -449,10 +428,7 @@ public class DependencyGraphTACO implements DependencyGraph {
         // Otherwise, find the compression type
         // Guarantee the adjacency
         Direction direction = findAdjacencyDirection(dep, candDep, DEAULT_SHIFT_STEP);
-        if (direction == Direction.NODIRECTION ||
-                (inRowCompression &&
-                        (direction == Direction.TOLEFT ||
-                                direction == Direction.TORIGHT))) {
+        if (direction == Direction.NODIRECTION) {
             return new CompressInfo(false, Direction.NODIRECTION, PatternType.NOTYPE,
                     prec, dep, candPrec, candDep, metaData);
         }
@@ -508,7 +484,7 @@ public class DependencyGraphTACO implements DependencyGraph {
         return res;
     }
 
-    public String getTACOBreakdown() {
+    public String getCompressInfo() {
         HashMap<PatternType, Integer> typeCount = new HashMap();
         depToPrecList.keySet().forEach(dep -> {
             List<RefWithMeta> precWithMetaList = depToPrecList.get(dep);
@@ -584,42 +560,5 @@ public class DependencyGraphTACO implements DependencyGraph {
             this.candDep = candDep;
             this.edgeMeta = edgeMeta;
         }
-    }
-
-    private class EdgeUpdate {
-        Ref oldPrec;
-        Ref oldDep;
-        EdgeMeta oldEdgeMeta;
-
-        Ref newPrec;
-        Ref newDep;
-        EdgeMeta newEdgeMeta;
-
-        EdgeUpdate(Ref oldPrec,
-                   Ref oldDep,
-                   EdgeMeta oldEdgeMeta,
-                   Ref newPrec,
-                   Ref newDep,
-                   EdgeMeta newEdgeMeta) {
-            this.oldPrec = oldPrec;
-            this.oldDep = oldDep;
-            this.oldEdgeMeta = oldEdgeMeta;
-            updateEdge(newPrec, newDep, newEdgeMeta);
-        }
-
-        void updateEdge(Ref newPrec,
-                        Ref newDep,
-                        EdgeMeta newEdgeMeta) {
-            this.newPrec = newPrec;
-            this.newDep = newDep;
-            this.newEdgeMeta = newEdgeMeta;
-        }
-
-        boolean hasUpdate() {
-            return !(oldPrec.equals(newPrec) &&
-                    oldDep.equals(oldPrec) &&
-                    oldEdgeMeta.equals(newEdgeMeta));
-        }
-
     }
 }
