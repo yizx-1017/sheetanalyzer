@@ -4,14 +4,14 @@
 
     <groupId>io.github.dataspread</groupId>
     <artifactId>sheetanalyzer</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3-SNAPSHOT</version>
 
     <name>${project.artifactId}</name>
     <description>Spreadsheet Analyzer</description>
     <packaging>jar</packaging>
     <scm>
         <developerConnection>scm:git:https://github.com/dataspread/sheetanalyzer.git</developerConnection>
-      <tag>sheetanalyzer-1.0.2</tag>
+      <tag>sheetanalyzer-1.0.1</tag>
   </scm>
 
 
