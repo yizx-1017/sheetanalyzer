@@ -4,7 +4,7 @@
 
     <groupId>io.github.dataspread</groupId>
     <artifactId>sheetanalyzer</artifactId>
-    <version>1.0.5-SNAPSHOT</version>
+    <version>1.0.5</version>
 
     <name>${project.artifactId}</name>
     <description>Spreadsheet Analyzer</description>
