@@ -10,12 +10,13 @@ import org.apache.poi.ss.formula.ptg.*;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFEvaluationWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.dataspread.sheetanalyzer.data.CellContent;
+import org.dataspread.sheetanalyzer.data.SheetData;
 import org.dataspread.sheetanalyzer.util.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 
