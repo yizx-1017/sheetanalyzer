@@ -4,7 +4,7 @@
 
     <groupId>io.github.dataspread</groupId>
     <artifactId>sheetanalyzer</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.1-SNAPSHOT</version>
 
     <name>${project.artifactId}</name>
     <description>Spreadsheet Analyzer</description>
@@ -13,7 +13,7 @@
         <developerConnection>
             scm:git:https://github.com/dataspread/sheetanalyzer.git
         </developerConnection>
-        <tag>sheetanalyzer-1.0.6</tag>
+        <tag>sheetanalyzer-0.0.1</tag>
     </scm>
 
     <distributionManagement>
