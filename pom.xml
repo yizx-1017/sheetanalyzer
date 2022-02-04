@@ -4,7 +4,7 @@
 
     <groupId>io.github.dataspread</groupId>
     <artifactId>sheetanalyzer</artifactId>
-    <version>1.0.4-SNAPSHOT</version>
+    <version>1.0.5-SNAPSHOT</version>
 
     <name>${project.artifactId}</name>
     <description>Spreadsheet Analyzer</description>
@@ -13,8 +13,15 @@
         <developerConnection>
             scm:git:https://github.com/dataspread/sheetanalyzer.git
         </developerConnection>
-        <tag>sheetanalyzer-1.0.2</tag>
+        <tag>sheetanalyzer-1.0.5</tag>
     </scm>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
 
 
     <properties>
