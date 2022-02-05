@@ -92,6 +92,11 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
     }
 
     @Override
+    public Map<String, Map<String, List<Ref>>> getFormulaClusters() {
+        throw new ArrayIndexOutOfBoundsException();
+    }
+
+    @Override
     public Map<Integer, Integer> getRefDistribution() {
         HashMap<Integer, Integer> refDist = new HashMap<>();
         sheetDataMap.forEach((sheetName, sheetData) -> {

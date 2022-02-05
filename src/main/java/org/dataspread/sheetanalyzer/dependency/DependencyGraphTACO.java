@@ -18,7 +18,6 @@ import static org.dataspread.sheetanalyzer.dependency.util.PatternTools.*;
 
 public class DependencyGraphTACO implements DependencyGraph {
 
-    /** Map<dependant, precedent> */
     protected HashMap<Ref, List<RefWithMeta>> precToDepList = new HashMap<>();
     protected HashMap<Ref, List<RefWithMeta>> depToPrecList = new HashMap<>();
     private RTree<Ref, Rectangle> _rectToRef = RTree.create();
@@ -78,10 +77,6 @@ public class DependencyGraphTACO implements DependencyGraph {
         });
         return retRefList;
     }
-
-    // private boolean isContained(LinkedHashSet<Ref> result, Ref input) {
-    //     return result.stream().anyMatch(ref -> isSubsume(ref, input));
-    // }
 
     public long getNumEdges() {
         AtomicLong numEdges = new AtomicLong(0);
