@@ -5,6 +5,7 @@ import com.github.davidmoten.rtree.RTree;
 import com.github.davidmoten.rtree.geometry.Rectangle;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
+import org.apache.commons.math3.geometry.spherical.twod.Edge;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.dataspread.sheetanalyzer.dependency.util.*;
 import org.dataspread.sheetanalyzer.util.Pair;
@@ -149,11 +150,107 @@ public class DependencyGraphTACO implements DependencyGraph {
     }
 
     public void addBatch(List<Pair<Ref, Ref>> edgeBatch) {
-        edgeBatch.forEach(oneEdge -> {
-            Ref prec = oneEdge.first;
-            Ref dep = oneEdge.second;
-            add(prec, dep);
-        });
+        // edgeBatch.forEach(oneEdge -> {
+        //     Ref prec = oneEdge.first;
+        //     Ref dep = oneEdge.second;
+        //     add(prec, dep);
+        // });
+        List<Pair<Ref, RefWithMeta>> result = optimalSearch(edgeBatch);
+        assert result != null;
+        result.forEach(oneEdge ->
+                insertMemEntry(oneEdge.first, oneEdge.second.getRef(),
+                        oneEdge.second.getEdgeMeta()));
+    }
+
+    private List<Pair<Ref, RefWithMeta>> optimalSearch(List<Pair<Ref, Ref>> edgeBatch) {
+        List<Pair<Ref, RefWithMeta>> result = null;
+        for (int i = 1; i <= edgeBatch.size(); i++) {
+            List<List<List<Pair<Ref, Ref>>>> retPartitionings = searchHelper(edgeBatch, i);
+            for (List<List<Pair<Ref, Ref>>> onePartitioning : retPartitionings) {
+                result = compress(onePartitioning);
+                if (result != null) break;
+            }
+            if (result != null) break;
+        }
+        return result;
+    }
+
+    private List<Pair<Ref, RefWithMeta>> compress(List<List<Pair<Ref, Ref>>> partitions) {
+        List<Pair<Ref, RefWithMeta>> result = new LinkedList<>();
+        for (List<Pair<Ref, Ref>> partition: partitions) {
+            Pair<Ref, RefWithMeta> pair = partCompress(partition);
+            if (pair == null) return null;
+            result.add(pair);
+        }
+        return result;
+    }
+
+    private Pair<Ref, RefWithMeta> partCompress(List<Pair<Ref, Ref>> partition) {
+        Ref candPrec = partition.get(0).first;
+        Ref candDep = partition.get(0).second;
+        EdgeMeta edgeMeta = new EdgeMeta(PatternType.NOTYPE, Offset.noOffset, Offset.noOffset);
+
+        for (int i = 1; i < partition.size(); i++) {
+            Ref prec = partition.get(i).first;
+            Ref dep = partition.get(i).second;
+            CompressInfo compressInfo = findCompressionPattern(prec, dep, candPrec, candDep, edgeMeta);
+            if (compressInfo.compType == PatternType.NOTYPE) {
+                for (int j = 0; j < PatternType.NOTYPE.ordinal()
+                        - PatternType.TYPEFIVE.ordinal(); j++) {
+                    int gapSize = i + 1;
+                    PatternType patternType =
+                            PatternType.values()[PatternType.TYPEFIVE.ordinal() + i];
+                    compressInfo = findCompressionPatternWithGap(prec, dep, candPrec, candDep, edgeMeta,
+                            gapSize, patternType);
+                    if (compressInfo.compType != PatternType.NOTYPE) break;
+                }
+            }
+            if (compressInfo.compType == PatternType.NOTYPE) return null;
+            candPrec = candPrec.getBoundingBox(prec);
+            candDep = candDep.getBoundingBox(dep);
+            Pair<Offset, Offset> offsetPair = computeOffset(candPrec, candDep, compressInfo.compType);
+            edgeMeta = new EdgeMeta(compressInfo.compType, offsetPair.first, offsetPair.second);
+        }
+        return new Pair<>(candPrec, new RefWithMeta(candDep, edgeMeta));
+    }
+
+    private List<List<List<Pair<Ref, Ref>>>> searchHelper(List<Pair<Ref, Ref>> ori, int m) {
+        List<List<List<Pair<Ref, Ref>>>> ret = new ArrayList<>();
+        if(ori.size() < m || m < 1) return ret;
+
+        if(m == 1) {
+            List<List<Pair<Ref, Ref>>> partition = new ArrayList<>();
+            partition.add(new ArrayList<>(ori));
+            ret.add(partition);
+            return ret;
+        }
+
+        // f(n-1, m)
+        List<List<List<Pair<Ref, Ref>>>> prev1 = searchHelper(ori.subList(0, ori.size() - 1), m);
+        for(int i=0; i<prev1.size(); i++) {
+            for(int j=0; j<prev1.get(i).size(); j++) {
+                // Deep copy from prev1.get(i) to l
+                List<List<Pair<Ref, Ref>>> l = new ArrayList<>();
+                for(List<Pair<Ref, Ref>> inner : prev1.get(i)) {
+                    l.add(new ArrayList<>(inner));
+                }
+
+                l.get(j).add(ori.get(ori.size()-1));
+                ret.add(l);
+            }
+        }
+
+        List<Pair<Ref, Ref>> set = new ArrayList<>();
+        set.add(ori.get(ori.size() - 1));
+        // f(n-1, m-1)
+        List<List<List<Pair<Ref, Ref>>>> prev2 = searchHelper(ori.subList(0, ori.size() - 1), m - 1);
+        for(int i=0; i<prev2.size(); i++) {
+            List<List<Pair<Ref, Ref>>> l = new ArrayList<>(prev2.get(i));
+            l.add(set);
+            ret.add(l);
+        }
+
+        return ret;
     }
 
     public void setInRowCompression(boolean inRowCompression) {

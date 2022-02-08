@@ -7,10 +7,7 @@ import org.dataspread.sheetanalyzer.parser.POIParser;
 import org.dataspread.sheetanalyzer.parser.SpreadsheetParser;
 import org.dataspread.sheetanalyzer.util.*;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -43,6 +40,7 @@ public class SheetAnalyzer {
             DependencyGraphTACO depGraph = new DependencyGraphTACO();
             depGraph.setInRowCompression(inRowCompression);
             HashSet<Ref> refSet = new HashSet<>();
+            List<Pair<Ref, Ref>> edgeBatch = new ArrayList<>();
             sheetData.getSortedDepPairs(isRowWise).forEach(depPair -> {
                 if (inRowCompression) {
                     boolean inRowOnly = isInRowOnly(depPair);
@@ -51,13 +49,15 @@ public class SheetAnalyzer {
                 Ref dep = depPair.first;
                 List<Ref> precList = depPair.second;
                 precList.forEach(prec -> {
-                    depGraph.add(prec, dep);
+                    // depGraph.add(prec, dep);
+                    edgeBatch.add(new Pair<>(prec, dep));
                     numEdges += 1;
                 });
                 refSet.add(dep);
                 refSet.addAll(precList);
             });
             depGraph.setDoCompression(true);
+            depGraph.addBatch(edgeBatch);
             inputDepGraphMap.put(sheetName, depGraph);
             numVertices += refSet.size();
         });

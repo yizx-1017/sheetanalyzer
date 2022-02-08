@@ -23,7 +23,7 @@ import java.util.Set;
 public class TestRRGapTwoPattern {
     private static SheetAnalyzer sheetAnalyzer;
     private static final String sheetName = "RRGapTwoSheet";
-    private static final int maxRows = 1000;
+    private static final int maxRows = 10;
     private static final int gapSize = 2;
 
     private static File createRRGapTwoSheet() throws IOException {
