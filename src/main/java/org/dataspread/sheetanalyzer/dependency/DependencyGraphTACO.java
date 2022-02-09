@@ -155,11 +155,13 @@ public class DependencyGraphTACO implements DependencyGraph {
         //     Ref dep = oneEdge.second;
         //     add(prec, dep);
         // });
-        List<Pair<Ref, RefWithMeta>> result = optimalSearch(edgeBatch);
-        assert result != null;
-        result.forEach(oneEdge ->
-                insertMemEntry(oneEdge.first, oneEdge.second.getRef(),
-                        oneEdge.second.getEdgeMeta()));
+        if (edgeBatch.size() != 0) {
+            List<Pair<Ref, RefWithMeta>> result = optimalSearch(edgeBatch);
+            assert result != null;
+            result.forEach(oneEdge ->
+                    insertMemEntry(oneEdge.first, oneEdge.second.getRef(),
+                            oneEdge.second.getEdgeMeta()));
+        }
     }
 
     private List<Pair<Ref, RefWithMeta>> optimalSearch(List<Pair<Ref, Ref>> edgeBatch) {
