@@ -78,6 +78,12 @@ public abstract class SheetAnalyzer {
     public abstract Map<String, Map<Ref, List<RefWithMeta>>> getTACODepGraphs();
 
     /**
+     * Get the formula clusters
+     * @return
+     */
+    public abstract Map<String, Map<String, List<Ref>>> getFormulaClusters();
+
+    /**
      * Get the distribution of references a formula has
      *
      * @return
