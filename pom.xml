@@ -1,32 +1,61 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.github.dataspread</groupId>
     <artifactId>sheetanalyzer</artifactId>
     <version>0.0.2</version>
+    <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>
     <description>Spreadsheet Analyzer</description>
-    <packaging>jar</packaging>
+    <url>https://github.com/dataspread/sheetanalyzer</url>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>http://www.opensource.org/licenses/mit-license.php</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Dixin Tang</name>
+            <email>totemtang@berkeley.edu</email>
+            <organization>UC Berkeley</organization>
+            <organizationUrl>https://www.berkeley.edu/</organizationUrl>
+        </developer>
+        <developer>
+            <name>Lawrence Chen</name>
+            <email>lawrencecchen@berkeley.edu</email>
+            <organization>UC Berkeley</organization>
+            <organizationUrl>https://www.berkeley.edu/</organizationUrl>
+        </developer>
+    </developers>
+
     <scm>
         <developerConnection>
             scm:git:https://github.com/dataspread/sheetanalyzer.git
         </developerConnection>
         <tag>sheetanalyzer-0.0.1</tag>
+        <url>https://github.com/dataspread/sheetanalyzer</url>
     </scm>
 
     <distributionManagement>
         <snapshotRepository>
             <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots
+            </url>
         </snapshotRepository>
         <repository>
             <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <url>
+                https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/
+            </url>
         </repository>
     </distributionManagement>
-
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
