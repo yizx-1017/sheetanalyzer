@@ -44,9 +44,7 @@ public class TestRFPattern {
 
         File xlsTempFile = TestUtil.createXlsTempFile();
         FileOutputStream outputStream = new FileOutputStream(xlsTempFile);
-        FileOutputStream outputStream2 = new FileOutputStream("RFSheet.xlsx");
         workbook.write(outputStream);
-        workbook.write(outputStream2);
         workbook.close();
 
         return xlsTempFile;
