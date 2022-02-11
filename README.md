@@ -20,5 +20,4 @@ mvn versions:set -DnewVersion=1.2.3
 
 ```shell
 mvn clean deploy -P release
-
 ```
