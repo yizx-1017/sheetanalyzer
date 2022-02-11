@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 public class POIParser implements SpreadsheetParser {
 
@@ -26,6 +27,7 @@ public class POIParser implements SpreadsheetParser {
     private FormulaParsingWorkbook evalbook;
     private final HashMap<String, SheetData> sheetDataMap;
     private final String fileName;
+
 
     public POIParser(String filePath) throws SheetNotSupportedException {
         File fileItem = new File(filePath);
@@ -35,15 +37,18 @@ public class POIParser implements SpreadsheetParser {
         try {
             this.workbook = WorkbookFactory.create(fileItem);
             if (workbook instanceof HSSFWorkbook) {
-                this.evalbook = HSSFEvaluationWorkbook.create((HSSFWorkbook) workbook);
+                this.evalbook =
+                        HSSFEvaluationWorkbook.create((HSSFWorkbook) workbook);
             } else if (workbook instanceof XSSFWorkbook) {
-                this.evalbook = XSSFEvaluationWorkbook.create((XSSFWorkbook) workbook);
+                this.evalbook =
+                        XSSFEvaluationWorkbook.create((XSSFWorkbook) workbook);
             } else {
                 throw new SheetNotSupportedException();
             }
             parseSpreadsheet();
         } catch (Exception e) {
-            throw new SheetNotSupportedException("Parsing " + filePath + " failed");
+            throw new SheetNotSupportedException("Parsing " + filePath + " " +
+                    "failed");
         } finally {
             if (workbook != null) {
                 try {
@@ -53,7 +58,19 @@ public class POIParser implements SpreadsheetParser {
                 }
             }
         }
+    }
 
+    public POIParser(Map<String, String[][]> sheetContent) throws SheetNotSupportedException {
+        try {
+            sheetDataMap = new HashMap<>();
+            fileName = "TempWorkbook";
+            workbook = new XSSFWorkbook();
+            evalbook = XSSFEvaluationWorkbook.create((XSSFWorkbook) workbook);
+            parseSheetContentToWorkbook(sheetContent);
+            parseSpreadsheet();
+        } catch (Exception e) {
+            throw new SheetNotSupportedException("Parsing formulae failed");
+        }
     }
 
     public String getFileName() {
@@ -66,17 +83,53 @@ public class POIParser implements SpreadsheetParser {
 
     public boolean skipParsing(int threshold) {
         int totalRows = 0;
-        for(Sheet sheet: workbook) {
+        for (Sheet sheet : workbook) {
             totalRows += sheet.getPhysicalNumberOfRows();
         }
         return totalRows <= threshold;
+    }
+
+
+    /**
+     * Parses formula matrix (String[][]) from Excel's JavaScript API into
+     * workbook.
+     */
+    private void parseCellsToWorkbook(String sheetName, String[][] cells) {
+        Sheet sheet = workbook.createSheet(sheetName);
+        for (int i = 0; i < cells.length; i++) {
+            Row row = sheet.createRow(i);
+            for (int j = 0; j < cells[0].length; j++) {
+                String cellString = cells[i][j];
+                boolean isFormula = cellString.startsWith("=");
+                CellType cellType = isFormula ? CellType.FORMULA :
+                        CellType.STRING;
+                Cell cell = row.createCell(j, cellType);
+                if (isFormula) {
+                    cell.setCellFormula(cellString.substring(1));
+                } else if (cellString.length() < 1) {
+                    cell.setBlank();
+                } else {
+                    cell.setCellValue(cellString);
+                }
+            }
+        }
+    }
+
+    private void parseSheetContentToWorkbook(Map<String,
+            String[][]> sheetContent) {
+        for (Map.Entry<String, String[][]> sheet :
+                sheetContent.entrySet()) {
+            String sheetName = sheet.getKey();
+            String[][] sheetCells = sheet.getValue();
+            parseCellsToWorkbook(sheetName, sheetCells);
+        }
     }
 
     private void parseSpreadsheet() throws SheetNotSupportedException {
         for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
             SheetData sheetData = parseOneSheet(workbook.getSheetAt(i));
             sheetDataMap.put(workbook.getSheetAt(i).getSheetName()
-                    .replace(',','-'), sheetData);
+                    .replace(',', '-'), sheetData);
         }
     }
 
@@ -90,13 +143,16 @@ public class POIParser implements SpreadsheetParser {
                     if (cell.getCellType() == CellType.FORMULA) {
                         parseOneFormulaCell(sheetData, cell);
                     } else {
-                        Ref dep = new RefImpl(cell.getRowIndex(), cell.getColumnIndex());
-                        CellContent cellContent = new CellContent(getCellContentString(cell),
-                                "", false);
+                        Ref dep = new RefImpl(cell.getRowIndex(),
+                                cell.getColumnIndex());
+                        CellContent cellContent =
+                                new CellContent(getCellContentString(cell),
+                                        "", false);
                         sheetData.addContent(dep, cellContent);
                     }
                 }
-                if (cell.getColumnIndex() > maxCols) maxCols = cell.getColumnIndex();
+                if (cell.getColumnIndex() > maxCols)
+                    maxCols = cell.getColumnIndex();
             }
             if (row.getRowNum() > maxRows) maxRows = row.getRowNum();
         }
@@ -126,7 +182,8 @@ public class POIParser implements SpreadsheetParser {
         if (tokens != null) {
             for (Ptg token : tokens) {
                 if (token instanceof OperandPtg) {
-                    Ref prec = parseOneToken(cell, (OperandPtg) token, sheetData);
+                    Ref prec = parseOneToken(cell, (OperandPtg) token,
+                            sheetData);
                     if (prec != null) {
                         numRefs += 1;
                         precList.add(prec);
@@ -141,7 +198,6 @@ public class POIParser implements SpreadsheetParser {
         CellContent cellContent = new CellContent("",
                 cell.getCellFormula(), true);
         sheetData.addContent(dep, cellContent);
-
     }
 
     private Ref parseOneToken(Cell cell, OperandPtg token,
@@ -192,7 +248,7 @@ public class POIParser implements SpreadsheetParser {
         return null;
     }
 
-    private Sheet getDependentSheet (Cell src, OperandPtg opPtg) throws SheetNotSupportedException {
+    private Sheet getDependentSheet(Cell src, OperandPtg opPtg) throws SheetNotSupportedException {
         Sheet sheet = null;
         if (opPtg instanceof RefPtg) {
             sheet = src.getSheet();
@@ -203,26 +259,31 @@ public class POIParser implements SpreadsheetParser {
         }
 
         // else if (opPtg instanceof Ref3DPtg) {
-        //     sheet = this.workbook.getSheet(this.getSheetNameFrom3DRef((Ref3DPtg) opPtg));
+        //     sheet = this.workbook.getSheet(this.getSheetNameFrom3DRef(
+        //     (Ref3DPtg) opPtg));
         // } else if (opPtg instanceof Area3DPtg) {
-        //     sheet = this.workbook.getSheet(this.getSheetNameFrom3DRef((Area3DPtg) opPtg));
+        //     sheet = this.workbook.getSheet(this.getSheetNameFrom3DRef(
+        //     (Area3DPtg) opPtg));
         // }
         return sheet;
     }
 
-    private String getSheetNameFrom3DRef (OperandPtg ptg) {
+    private String getSheetNameFrom3DRef(OperandPtg ptg) {
         String sheetName = null;
         if (ptg instanceof Ref3DPtg) {
             Ref3DPtg ptgRef3D = (Ref3DPtg) ptg;
-            sheetName = ptgRef3D.toFormulaString((FormulaRenderingWorkbook) this.evalbook);
+            sheetName =
+                    ptgRef3D.toFormulaString((FormulaRenderingWorkbook) this.evalbook);
         } else if (ptg instanceof Area3DPtg) {
             Area3DPtg ptgArea3D = (Area3DPtg) ptg;
-            sheetName = ptgArea3D.toFormulaString((FormulaRenderingWorkbook) this.evalbook);
+            sheetName =
+                    ptgArea3D.toFormulaString((FormulaRenderingWorkbook) this.evalbook);
         }
-        return sheetName != null ? sheetName.substring(0, sheetName.indexOf('!')) : null;
+        return sheetName != null ? sheetName.substring(0,
+                sheetName.indexOf('!')) : null;
     }
 
-    private Cell getCellAt (Sheet sheet, int rowIdx, int colIdx) {
+    private Cell getCellAt(Sheet sheet, int rowIdx, int colIdx) {
         Cell cell;
         try {
             cell = sheet.getRow(rowIdx).getCell(colIdx);
@@ -232,7 +293,7 @@ public class POIParser implements SpreadsheetParser {
         return cell;
     }
 
-    private Ptg[] getTokens (Cell cell) {
+    private Ptg[] getTokens(Cell cell) {
         try {
             return FormulaParser.parse(
                     cell.getCellFormula(),
@@ -241,6 +302,8 @@ public class POIParser implements SpreadsheetParser {
                     this.workbook.getSheetIndex(cell.getSheet()),
                     cell.getRowIndex()
             );
-        } catch (Exception e) { return null; }
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
