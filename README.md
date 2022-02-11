@@ -8,5 +8,17 @@ SheetAnalyzer is a library for analyzing the depenency and formula structure of 
 
 ## Test
 
+```shell
 mvn test
+```
 
+## Deployment
+
+```shell
+mvn versions:set -DnewVersion=1.2.3
+```
+
+```shell
+mvn clean deploy -P release
+
+```
