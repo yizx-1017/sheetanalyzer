@@ -21,3 +21,7 @@ mvn versions:set -DnewVersion=1.2.3
 ```shell
 mvn clean deploy -P release
 ```
+More information for deploying:
+
+- https://central.sonatype.org/publish/release/
+- https://central.sonatype.org/publish/publish-maven/
