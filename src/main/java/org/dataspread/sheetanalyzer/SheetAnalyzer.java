@@ -101,6 +101,10 @@ public class SheetAnalyzer {
         return depGraphMap.get(sheetName).getDependents(ref);
     }
 
+    public Set<Ref> getPrecedents(String sheetName, Ref ref) {
+        return depGraphMap.get(sheetName).getPrecedents(ref);
+    }
+
     public HashMap<String, HashMap<Ref, List<RefWithMeta>>> getTACODepGraphs() {
         HashMap<String, HashMap<Ref, List<RefWithMeta>>> tacoDepGraphs = new HashMap<>();
         depGraphMap.forEach((sheetName, depGraph) -> {

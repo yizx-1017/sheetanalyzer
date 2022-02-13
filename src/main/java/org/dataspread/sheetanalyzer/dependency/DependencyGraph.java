@@ -8,6 +8,7 @@ import java.util.Set;
 
 public interface DependencyGraph {
  Set<Ref> getDependents(Ref precedent);
+ Set<Ref> getPrecedents(Ref dependent);
  void add(Ref precedent, Ref dependent);
  void clearDependents(Ref dependent);
  void addBatch(List<Pair<Ref, Ref>> edgeBatch);

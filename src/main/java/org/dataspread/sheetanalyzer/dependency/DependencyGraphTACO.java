@@ -56,13 +56,46 @@ public class DependencyGraphTACO implements DependencyGraph {
                     Set<Ref> depUpdateRefSet = findUpdateDepRef(precRef, depRefWithMeta.getRef(),
                             depRefWithMeta.getEdgeMeta(), realUpdateRef);
                     depUpdateRefSet.forEach(depUpdateRef -> {
-                        LinkedList<Ref> overlapRef = getNonOverlapRef(resultSet.get(), depUpdateRef);
-                        overlapRef.forEach(olRef -> {
-                            resultSet.set(resultSet.get().add(olRef, RefUtils.refToRect(olRef)));
-                            result.add(olRef);
-                            if (!isDirectDep) updateQueue.add(olRef);
-                        });
+                        updateResult(result, isDirectDep, resultSet, updateQueue, depUpdateRef);
                     });
+                });
+            }
+        }
+    }
+
+    private void updateResult(LinkedHashSet<Ref> result, boolean isDirectDep, AtomicReference<RTree<Ref, Rectangle>> resultSet, Queue<Ref> updateQueue, Ref depUpdateRef) {
+        LinkedList<Ref> overlapRef = getNonOverlapRef(resultSet.get(), depUpdateRef);
+        overlapRef.forEach(olRef -> {
+            resultSet.set(resultSet.get().add(olRef, RefUtils.refToRect(olRef)));
+            result.add(olRef);
+            if (!isDirectDep) updateQueue.add(olRef);
+        });
+    }
+
+    public Set<Ref> getPrecedents(Ref dependent) {
+        final boolean isDirectDep = false;
+        LinkedHashSet<Ref> result = new LinkedHashSet<>();
+
+        if (RefUtils.isValidRef(dependent)) getPrecedentInternal(dependent, result, isDirectDep);
+        return result;
+    }
+
+    private void getPrecedentInternal(Ref depUpdate,
+                                       LinkedHashSet<Ref> result,
+                                       boolean isDirectPrec) {
+        AtomicReference<RTree<Ref, Rectangle>> resultSet = new AtomicReference<>(RTree.create());
+        Queue<Ref> updateQueue = new LinkedList<>();
+        updateQueue.add(depUpdate);
+        while (!updateQueue.isEmpty()) {
+            Ref updateRef = updateQueue.remove();
+            Iterator<Ref> refIter = findOverlappingRefs(updateRef);
+            while (refIter.hasNext()) {
+                Ref depRef = refIter.next();
+                Ref realUpdateRef = updateRef.getOverlap(depRef);
+                findPrecs(depRef).forEach(precRefWithMeta -> {
+                    Ref precUpdateRef = findUpdatePrecRef(depRef, precRefWithMeta.getRef(),
+                            precRefWithMeta.getEdgeMeta(), realUpdateRef, isDirectPrec);
+                    updateResult(result, isDirectPrec, resultSet, updateQueue, precUpdateRef);
                 });
             }
         }
