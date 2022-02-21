@@ -7,11 +7,11 @@ import java.util.List;
 public class RefMetadata {
 
     private List<Ref> dependents = new ArrayList<>();
-    private CellContent content = null;
+    private CellContent content = CellContent.getNullCellContent();
     private int numFormulaRefs = 0;
 
     public RefMetadata(List<Ref> dependents) {
-        this(dependents, null, 0);
+        this(dependents, CellContent.getNullCellContent(), 0);
     }
 
     public RefMetadata(CellContent content) {
@@ -19,7 +19,7 @@ public class RefMetadata {
     }
 
     public RefMetadata(int numFormulaRefs) {
-        this(new ArrayList<>(), null, numFormulaRefs);
+        this(new ArrayList<>(), CellContent.getNullCellContent(), numFormulaRefs);
     }
 
     public RefMetadata(RefMetadata metadata) {
