@@ -28,7 +28,6 @@ public class POIParser implements SpreadsheetParser {
     private final HashMap<String, SheetData> sheetDataMap;
     private final String fileName;
 
-
     public POIParser(String filePath) throws SheetNotSupportedException {
         File fileItem = new File(filePath);
         fileName = fileItem.getName();
@@ -37,11 +36,9 @@ public class POIParser implements SpreadsheetParser {
         try {
             this.workbook = WorkbookFactory.create(fileItem);
             if (workbook instanceof HSSFWorkbook) {
-                this.evalbook =
-                        HSSFEvaluationWorkbook.create((HSSFWorkbook) workbook);
+                this.evalbook = HSSFEvaluationWorkbook.create((HSSFWorkbook) workbook);
             } else if (workbook instanceof XSSFWorkbook) {
-                this.evalbook =
-                        XSSFEvaluationWorkbook.create((XSSFWorkbook) workbook);
+                this.evalbook = XSSFEvaluationWorkbook.create((XSSFWorkbook) workbook);
             } else {
                 throw new SheetNotSupportedException();
             }
@@ -89,7 +86,6 @@ public class POIParser implements SpreadsheetParser {
         return totalRows <= threshold;
     }
 
-
     /**
      * Parses formula matrix (String[][]) from Excel's JavaScript API into
      * workbook.
@@ -101,8 +97,7 @@ public class POIParser implements SpreadsheetParser {
             for (int j = 0; j < cells[0].length; j++) {
                 String cellString = cells[i][j];
                 boolean isFormula = cellString.startsWith("=");
-                CellType cellType = isFormula ? CellType.FORMULA :
-                        CellType.STRING;
+                CellType cellType = isFormula ? CellType.FORMULA : CellType.STRING;
                 Cell cell = row.createCell(j, cellType);
                 if (isFormula) {
                     cell.setCellFormula(cellString.substring(1));
@@ -115,10 +110,8 @@ public class POIParser implements SpreadsheetParser {
         }
     }
 
-    private void parseSheetContentToWorkbook(Map<String,
-            String[][]> sheetContent) {
-        for (Map.Entry<String, String[][]> sheet :
-                sheetContent.entrySet()) {
+    private void parseSheetContentToWorkbook(Map<String, String[][]> sheetContent) {
+        for (Map.Entry<String, String[][]> sheet : sheetContent.entrySet()) {
             String sheetName = sheet.getKey();
             String[][] sheetCells = sheet.getValue();
             parseCellsToWorkbook(sheetName, sheetCells);
@@ -145,16 +138,16 @@ public class POIParser implements SpreadsheetParser {
                     } else {
                         Ref dep = new RefImpl(cell.getRowIndex(),
                                 cell.getColumnIndex());
-                        CellContent cellContent =
-                                new CellContent(getCellContentString(cell),
-                                        "", false);
+                        CellContent cellContent = new CellContent(getCellContentString(cell),
+                                "", false);
                         sheetData.addContent(dep, cellContent);
                     }
                 }
                 if (cell.getColumnIndex() > maxCols)
                     maxCols = cell.getColumnIndex();
             }
-            if (row.getRowNum() > maxRows) maxRows = row.getRowNum();
+            if (row.getRowNum() > maxRows)
+                maxRows = row.getRowNum();
         }
         return sheetData;
     }
@@ -201,7 +194,7 @@ public class POIParser implements SpreadsheetParser {
     }
 
     private Ref parseOneToken(Cell cell, OperandPtg token,
-                              SheetData sheetData) throws SheetNotSupportedException {
+            SheetData sheetData) throws SheetNotSupportedException {
         Sheet sheet = this.getDependentSheet(cell, token);
         if (sheet != null) {
             if (token instanceof Area2DPtgBase) {
@@ -259,11 +252,11 @@ public class POIParser implements SpreadsheetParser {
         }
 
         // else if (opPtg instanceof Ref3DPtg) {
-        //     sheet = this.workbook.getSheet(this.getSheetNameFrom3DRef(
-        //     (Ref3DPtg) opPtg));
+        // sheet = this.workbook.getSheet(this.getSheetNameFrom3DRef(
+        // (Ref3DPtg) opPtg));
         // } else if (opPtg instanceof Area3DPtg) {
-        //     sheet = this.workbook.getSheet(this.getSheetNameFrom3DRef(
-        //     (Area3DPtg) opPtg));
+        // sheet = this.workbook.getSheet(this.getSheetNameFrom3DRef(
+        // (Area3DPtg) opPtg));
         // }
         return sheet;
     }
@@ -272,12 +265,10 @@ public class POIParser implements SpreadsheetParser {
         String sheetName = null;
         if (ptg instanceof Ref3DPtg) {
             Ref3DPtg ptgRef3D = (Ref3DPtg) ptg;
-            sheetName =
-                    ptgRef3D.toFormulaString((FormulaRenderingWorkbook) this.evalbook);
+            sheetName = ptgRef3D.toFormulaString((FormulaRenderingWorkbook) this.evalbook);
         } else if (ptg instanceof Area3DPtg) {
             Area3DPtg ptgArea3D = (Area3DPtg) ptg;
-            sheetName =
-                    ptgArea3D.toFormulaString((FormulaRenderingWorkbook) this.evalbook);
+            sheetName = ptgArea3D.toFormulaString((FormulaRenderingWorkbook) this.evalbook);
         }
         return sheetName != null ? sheetName.substring(0,
                 sheetName.indexOf('!')) : null;
@@ -300,8 +291,7 @@ public class POIParser implements SpreadsheetParser {
                     this.evalbook,
                     FormulaType.CELL,
                     this.workbook.getSheetIndex(cell.getSheet()),
-                    cell.getRowIndex()
-            );
+                    cell.getRowIndex());
         } catch (Exception e) {
             return null;
         }

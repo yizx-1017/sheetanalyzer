@@ -1,9 +1,9 @@
 package org.dataspread.sheetanalyzer.data;
 
 public class CellContent {
-    final String value;
-    final String formula;
     final boolean isFormula;
+    final String formula;
+    final String value;
 
     public CellContent (String value, String formula, boolean isFormula) {
         this.value = value;

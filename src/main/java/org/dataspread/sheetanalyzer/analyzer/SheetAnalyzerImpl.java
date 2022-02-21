@@ -102,6 +102,12 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
         return tacoDepGraphs;
     }
 
+    /**
+     * Returns a map where each key is a sheet name and 
+     * each value is another map. In the nested map, each
+     * key is a formula cluster hash and each value is a 
+     * list of refs belonging to the cluster.
+     */
     @Override
     public Map<String, Map<String, List<Ref>>> getFormulaClusters() {
         throw new ArrayIndexOutOfBoundsException();
