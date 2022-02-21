@@ -18,14 +18,14 @@ import static org.dataspread.sheetanalyzer.dependency.util.PatternTools.*;
 
 public class DependencyGraphTACO implements DependencyGraph {
 
-    protected HashMap<Ref, List<RefWithMeta>> precToDepList = new HashMap<>();
-    protected HashMap<Ref, List<RefWithMeta>> depToPrecList = new HashMap<>();
+    protected Map<Ref, List<RefWithMeta>> precToDepList = new HashMap<>();
+    protected Map<Ref, List<RefWithMeta>> depToPrecList = new HashMap<>();
     private RTree<Ref, Rectangle> _rectToRef = RTree.create();
 
     private final CompressInfoComparator compressInfoComparator = new CompressInfoComparator();
 
-    public HashMap<Ref, List<RefWithMeta>> getCompressedGraph() {
-        return precToDepList;
+    public Map<Ref, List<RefWithMeta>> getCompressedGraph() {
+        return this.precToDepList;
     }
 
     public Set<Ref> getDependents(Ref precedent) {
@@ -49,8 +49,7 @@ public class DependencyGraphTACO implements DependencyGraph {
                 Ref precRef = refIter.next();
                 Ref realUpdateRef = updateRef.getOverlap(precRef);
                 findDeps(precRef).forEach(depRefWithMeta -> {
-                    Set<Ref> depUpdateRefSet = findUpdateDepRef(precRef, depRefWithMeta.getRef(),
-                            depRefWithMeta.getEdgeMeta(), realUpdateRef);
+                    Set<Ref> depUpdateRefSet = findUpdateDepRef(precRef, depRefWithMeta.getRef(), depRefWithMeta.getEdgeMeta(), realUpdateRef);
                     depUpdateRefSet.forEach(depUpdateRef -> {
                         LinkedList<Ref> overlapRef = getNonOverlapRef(resultSet.get(), depUpdateRef);
                         overlapRef.forEach(olRef -> {
@@ -480,7 +479,7 @@ public class DependencyGraphTACO implements DependencyGraph {
     }
 
     public String getCompressInfo() {
-        HashMap<PatternType, Integer> typeCount = new HashMap();
+        Map<PatternType, Integer> typeCount = new HashMap<>();
         depToPrecList.keySet().forEach(dep -> {
             List<RefWithMeta> precWithMetaList = depToPrecList.get(dep);
             precWithMetaList.forEach(precWithMeta -> {

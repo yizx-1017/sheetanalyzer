@@ -1,50 +1,42 @@
 package org.dataspread.sheetanalyzer.analyzer;
 
-import org.dataspread.sheetanalyzer.SheetAnalyzer;
-import org.dataspread.sheetanalyzer.data.SheetData;
-import org.dataspread.sheetanalyzer.dependency.DependencyGraph;
+import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
+import org.dataspread.sheetanalyzer.util.APINotImplementedException;
 import org.dataspread.sheetanalyzer.dependency.DependencyGraphTACO;
 import org.dataspread.sheetanalyzer.dependency.util.RefWithMeta;
-import org.dataspread.sheetanalyzer.parser.POIParser;
+import org.dataspread.sheetanalyzer.dependency.DependencyGraph;
 import org.dataspread.sheetanalyzer.parser.SpreadsheetParser;
-import org.dataspread.sheetanalyzer.util.APINotImplementedException;
+import org.dataspread.sheetanalyzer.parser.POIParser;
+import org.dataspread.sheetanalyzer.SheetAnalyzer;
 import org.dataspread.sheetanalyzer.util.Pair;
 import org.dataspread.sheetanalyzer.util.Ref;
-import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
 
-import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.*;
 
 public class SheetAnalyzerImpl extends SheetAnalyzer {
 
+    private final Map<String, DependencyGraph> depGraphMap = new HashMap<>();
     private final SpreadsheetParser parser;
     private final String fileName;
-    private final HashMap<String, SheetData> sheetDataMap;
-    private final HashMap<String, DependencyGraph> depGraphMap;
-    private long numEdges = 0;
     private long numVertices = 0;
+    private long numEdges = 0;
 
     public SheetAnalyzerImpl(String filePath) throws SheetNotSupportedException {
-        parser = new POIParser(filePath);
-        fileName = parser.getFileName();
-        sheetDataMap = parser.getSheetData();
-
-        depGraphMap = new HashMap<>();
+        this.parser = new POIParser(filePath);
+        this.fileName = parser.getFileName();
         genDepGraphFromSheetData(depGraphMap);
     }
 
     public SheetAnalyzerImpl(Map<String, String[][]> sheetContent) throws SheetNotSupportedException {
-        parser = new POIParser(sheetContent);
-        fileName = "TempFile";
-        sheetDataMap = parser.getSheetData();
-
-        depGraphMap = new HashMap<>();
+        this.parser = new POIParser(sheetContent);
+        this.fileName = "TempFile";
         genDepGraphFromSheetData(depGraphMap);
     }
 
-    private void genDepGraphFromSheetData(HashMap<String, DependencyGraph> inputDepGraphMap) {
+    private void genDepGraphFromSheetData(Map<String, DependencyGraph> inputDepGraphMap) {
         boolean isRowWise = false;
-        sheetDataMap.forEach((sheetName, sheetData) -> {
+        this.parser.getSheetData().forEach((sheetName, sheetData) -> {
             DependencyGraphTACO depGraph = new DependencyGraphTACO();
             HashSet<Ref> refSet = new HashSet<>();
             sheetData.getSortedDepPairs(isRowWise).forEach(depPair -> {
@@ -52,13 +44,13 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
                 List<Ref> precList = depPair.second;
                 precList.forEach(prec -> {
                     depGraph.add(prec, dep);
-                    numEdges += 1;
+                    this.numEdges += 1;
                 });
                 refSet.add(dep);
                 refSet.addAll(precList);
             });
             inputDepGraphMap.put(sheetName, depGraph);
-            numVertices += refSet.size();
+            this.numVertices += refSet.size();
         });
     }
 
@@ -74,12 +66,12 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
 
     @Override
     public int getNumSheets() {
-        return sheetDataMap.size();
+        return this.parser.getSheetData().size();
     }
 
     @Override
-    public HashMap<String, String> getCompressInfo() {
-        HashMap<String, String> compressInfoMap = new HashMap<>();
+    public Map<String, String> getCompressInfo() {
+        Map<String, String> compressInfoMap = new HashMap<>();
         depGraphMap.forEach((sheetName, depGraph) -> {
             compressInfoMap.put(sheetName, depGraph.getCompressInfo());
         });
@@ -93,8 +85,7 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
 
     @Override
     public Map<String, Map<Ref, List<RefWithMeta>>> getTACODepGraphs() {
-        Map<String, Map<Ref, List<RefWithMeta>>> tacoDepGraphs =
-                new HashMap<>();
+        Map<String, Map<Ref, List<RefWithMeta>>> tacoDepGraphs = new HashMap<>();
         depGraphMap.forEach((sheetName, depGraph) -> {
             tacoDepGraphs.put(sheetName,
                     ((DependencyGraphTACO) depGraph).getCompressedGraph());
@@ -115,8 +106,8 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
 
     @Override
     public Map<Integer, Integer> getRefDistribution() {
-        HashMap<Integer, Integer> refDist = new HashMap<>();
-        sheetDataMap.forEach((sheetName, sheetData) -> {
+        Map<Integer, Integer> refDist = new HashMap<>();
+        this.parser.getSheetData().forEach((sheetName, sheetData) -> {
             sheetData.getDepSet().forEach(dep -> {
                 Integer numRefs = sheetData.getNumRefs(dep);
                 Integer existingCount = refDist.getOrDefault(numRefs, 0);
@@ -146,18 +137,18 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
 
     @Override
     public long getNumEdges() {
-        return numEdges;
+        return this.numEdges;
     }
 
     @Override
     public long getNumVertices() {
-        return numVertices;
+        return this.numVertices;
     }
 
     @Override
     public long getNumOfFormulae() {
         AtomicLong numOfFormulae = new AtomicLong();
-        sheetDataMap.forEach((sheetName, sheetData) -> {
+        this.parser.getSheetData().forEach((sheetName, sheetData) -> {
             numOfFormulae.addAndGet(sheetData.getDepSet().size());
         });
         return numOfFormulae.get();

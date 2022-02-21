@@ -4,13 +4,11 @@ import java.util.Objects;
 
 public class Offset {
 
-    public static Offset noOffset = new Offset(0, 0);
+    public static final Offset noOffset = new Offset(0, 0);
+    private final int rowOffset;
+    private final int colOffset;
 
-    private int rowOffset;
-    private int colOffset;
-
-    public Offset(int rowOffset,
-                  int colOffset) {
+    public Offset(int rowOffset, int colOffset) {
         this.rowOffset = rowOffset;
         this.colOffset = colOffset;
     }

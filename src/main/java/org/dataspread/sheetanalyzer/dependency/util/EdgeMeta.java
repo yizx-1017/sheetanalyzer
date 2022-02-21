@@ -8,8 +8,7 @@ public class EdgeMeta {
     public final Offset startOffset;
     public final Offset endOffset;
 
-    public EdgeMeta(PatternType patternType,
-                    Offset startOffset, Offset endOffset) {
+    public EdgeMeta(PatternType patternType, Offset startOffset, Offset endOffset) {
         this.patternType = patternType;
         this.startOffset = startOffset;
         this.endOffset = endOffset;
