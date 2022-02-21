@@ -14,20 +14,24 @@ public class Offset {
     }
 
     public int getColOffset() {
-        return colOffset;
+        return this.colOffset;
     }
 
     public int getRowOffset() {
-        return rowOffset;
+        return this.rowOffset;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Offset)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Offset)) {
+            return false;
+        }
         Offset offset = (Offset) o;
-        return rowOffset == offset.rowOffset &&
-                colOffset == offset.colOffset;
+        return this.rowOffset == offset.rowOffset
+            && this.colOffset == offset.colOffset;
     }
 
     @Override

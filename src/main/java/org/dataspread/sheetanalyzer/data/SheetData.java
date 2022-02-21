@@ -39,7 +39,6 @@ public class SheetData {
         int colResult = Integer.compare(refA.getColumn(), refB.getColumn());
         if (colResult == 0) {
             return Integer.compare(refA.getRow(), refB.getRow());
-
         } else {
             return colResult;
         }
@@ -87,15 +86,15 @@ public class SheetData {
     }
 
     public void addOneAccess(Ref areaRef) {
-        accessAreaCache.add(areaRef);
+        this.accessAreaCache.add(areaRef);
     }
 
     public boolean areaAccessed(Ref areaRef) {
-        return accessAreaCache.contains(areaRef);
+        return this.accessAreaCache.contains(areaRef);
     }
 
     public String getSheetName() {
-        return sheetName;
+        return this.sheetName;
     }
 
     // Notice that in the following methods we return a copy

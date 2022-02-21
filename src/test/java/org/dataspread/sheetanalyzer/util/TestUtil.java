@@ -34,10 +34,14 @@ public class TestUtil {
     private static boolean containsMapAll(Map<Ref, Set<Ref>> mapA,
                                           Map<Ref, Set<Ref>> mapB) {
         for (Ref refB: mapB.keySet()) {
-            if (!mapA.containsKey(refB)) return false;
+            if (!mapA.containsKey(refB)) {
+                return false;
+            }
             Set<Ref> refSetA = mapA.get(refB);
             Set<Ref> refSetB = mapB.get(refB);
-            if (!hasSameRefs(refSetA, refSetB)) return false;
+            if (!hasSameRefs(refSetA, refSetB)) {
+                return false;
+            }
         }
 
         return true;

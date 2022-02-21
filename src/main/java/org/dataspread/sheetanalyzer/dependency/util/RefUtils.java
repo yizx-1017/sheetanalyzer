@@ -1,9 +1,9 @@
 package org.dataspread.sheetanalyzer.dependency.util;
 
-import com.github.davidmoten.rtree.geometry.Rectangle;
 import com.github.davidmoten.rtree.geometry.internal.RectangleFloat;
-import org.dataspread.sheetanalyzer.util.Ref;
+import com.github.davidmoten.rtree.geometry.Rectangle;
 import org.dataspread.sheetanalyzer.util.RefImpl;
+import org.dataspread.sheetanalyzer.util.Ref;
 
 public class RefUtils {
     public static boolean isValidRef(Ref ref) {

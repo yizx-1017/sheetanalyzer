@@ -1,8 +1,8 @@
 package org.dataspread.sheetanalyzer.util;
 
-import java.util.LinkedHashSet;
 import java.io.Serializable;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**

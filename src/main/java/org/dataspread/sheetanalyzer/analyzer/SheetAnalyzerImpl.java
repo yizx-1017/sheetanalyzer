@@ -18,20 +18,17 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
 
     private final Map<String, DependencyGraph> depGraphMap = new HashMap<>();
     private final SpreadsheetParser parser;
-    private final String fileName;
     private long numVertices = 0;
     private long numEdges = 0;
 
     public SheetAnalyzerImpl(String filePath) throws SheetNotSupportedException {
         this.parser = new POIParser(filePath);
-        this.fileName = parser.getFileName();
-        genDepGraphFromSheetData(depGraphMap);
+        genDepGraphFromSheetData(this.depGraphMap);
     }
 
     public SheetAnalyzerImpl(Map<String, String[][]> sheetContent) throws SheetNotSupportedException {
         this.parser = new POIParser(sheetContent);
-        this.fileName = "TempFile";
-        genDepGraphFromSheetData(depGraphMap);
+        genDepGraphFromSheetData(this.depGraphMap);
     }
 
     private void genDepGraphFromSheetData(Map<String, DependencyGraph> inputDepGraphMap) {
@@ -56,12 +53,12 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
 
     @Override
     public String getFileName() {
-        return fileName;
+        return this.parser.getFileName();
     }
 
     @Override
     public Set<String> getSheetNames() {
-        return depGraphMap.keySet();
+        return this.depGraphMap.keySet();
     }
 
     @Override
@@ -72,7 +69,7 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
     @Override
     public Map<String, String> getCompressInfo() {
         Map<String, String> compressInfoMap = new HashMap<>();
-        depGraphMap.forEach((sheetName, depGraph) -> {
+        this.depGraphMap.forEach((sheetName, depGraph) -> {
             compressInfoMap.put(sheetName, depGraph.getCompressInfo());
         });
         return compressInfoMap;
@@ -80,13 +77,13 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
 
     @Override
     public Set<Ref> getDependents(String sheetName, Ref ref) {
-        return depGraphMap.get(sheetName).getDependents(ref);
+        return this.depGraphMap.get(sheetName).getDependents(ref);
     }
 
     @Override
     public Map<String, Map<Ref, List<RefWithMeta>>> getTACODepGraphs() {
         Map<String, Map<Ref, List<RefWithMeta>>> tacoDepGraphs = new HashMap<>();
-        depGraphMap.forEach((sheetName, depGraph) -> {
+        this.depGraphMap.forEach((sheetName, depGraph) -> {
             tacoDepGraphs.put(sheetName,
                     ((DependencyGraphTACO) depGraph).getCompressedGraph());
         });
@@ -120,7 +117,7 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
     @Override
     public long getNumCompEdges() {
         AtomicLong numOfCompEdges = new AtomicLong();
-        depGraphMap.forEach((sheetName, depGraph) -> {
+        this.depGraphMap.forEach((sheetName, depGraph) -> {
             numOfCompEdges.addAndGet(depGraph.getNumEdges());
         });
         return numOfCompEdges.get();
@@ -129,7 +126,7 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
     @Override
     public long getNumCompVertices() {
         AtomicLong numOfCompVertices = new AtomicLong();
-        depGraphMap.forEach((sheetName, depGraph) -> {
+        this.depGraphMap.forEach((sheetName, depGraph) -> {
             numOfCompVertices.addAndGet(depGraph.getNumVertices());
         });
         return numOfCompVertices.get();

@@ -1,9 +1,9 @@
 package org.dataspread.sheetanalyzer.dependency.util;
 
-import com.github.davidmoten.rtree.geometry.Rectangle;
 import com.github.davidmoten.rtree.geometry.internal.RectangleFloat;
-import org.dataspread.sheetanalyzer.util.Ref;
+import com.github.davidmoten.rtree.geometry.Rectangle;
 import org.dataspread.sheetanalyzer.util.RefImpl;
+import org.dataspread.sheetanalyzer.util.Ref;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -351,9 +351,9 @@ public class PatternTools {
         int endColOffset = edgeMeta.endOffset.getColOffset();
 
         PatternType patternType;
-        if (edgeMeta.patternType != PatternType.TYPEZERO)
+        if (edgeMeta.patternType != PatternType.TYPEZERO) {
             patternType = edgeMeta.patternType;
-        else { // TYPEZERO
+        } else { // TYPEZERO
             if (isDirectPrec) {
                 patternType = PatternType.TYPEONE;
             } else if (startRowOffset == 1 || startColOffset == 1) {
