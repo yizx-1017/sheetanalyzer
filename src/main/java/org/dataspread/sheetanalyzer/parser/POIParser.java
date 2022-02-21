@@ -251,13 +251,11 @@ public class POIParser implements SpreadsheetParser {
     }
 
     private Cell getCellAt(Sheet sheet, int rowIdx, int colIdx) {
-        Cell cell;
         try {
-            cell = sheet.getRow(rowIdx).getCell(colIdx);
+            return sheet.getRow(rowIdx).getCell(colIdx);
         } catch (NullPointerException e) {
             return null;
         }
-        return cell;
     }
 
     private Ptg[] getTokens(Cell cell) {
