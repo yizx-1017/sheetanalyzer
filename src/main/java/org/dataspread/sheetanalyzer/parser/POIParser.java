@@ -44,7 +44,7 @@ public class POIParser implements SpreadsheetParser {
             err.printStackTrace();
             throw new SheetNotSupportedException("Could not load workbook " + this.filename);
         } catch (SheetNotSupportedException err) {
-            throw new SheetNotSupportedException("Parsing " + filePath + " " + "failed");
+            throw new SheetNotSupportedException("Parsing " + filePath + " failed");
         }
     }
 
