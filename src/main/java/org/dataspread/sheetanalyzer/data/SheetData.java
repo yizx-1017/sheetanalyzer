@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class SheetData {
 
-    private final Map<Ref, RefMetadata> refMetadata = new HashMap<>();
+    private final Map<Ref, CellWithMeta> refMetadata = new HashMap<>();
     private final Set<Ref> accessAreaCache = new HashSet<>();
     private final String sheetName;
 
@@ -46,7 +46,7 @@ public class SheetData {
 
     public List<Pair<Ref, List<Ref>>> getSortedDepPairs(boolean rowWise) {
         List<Pair<Ref, List<Ref>>> depPairList = new LinkedList<>();
-        this.refMetadata.entrySet().forEach((Map.Entry<Ref, RefMetadata> entry) -> {
+        this.refMetadata.entrySet().forEach((Map.Entry<Ref, CellWithMeta> entry) -> {
             depPairList.add(new Pair<>(entry.getKey(), entry.getValue().getDependents()));
         });
         if (rowWise) {
@@ -59,27 +59,27 @@ public class SheetData {
     }
 
     public void addDeps(Ref ref, List<Ref> precList) {
-        RefMetadata metadata = this.refMetadata.get(ref);
+        CellWithMeta metadata = this.refMetadata.get(ref);
         if (metadata == null) {
-            this.refMetadata.put(ref, new RefMetadata(precList));
+            this.refMetadata.put(ref, new CellWithMeta(precList));
         } else {
             metadata.setDependents(precList);
         }
     }
 
     public void addFormulaNumRef(Ref ref, int numRefs) {
-        RefMetadata metadata = this.refMetadata.get(ref);
+        CellWithMeta metadata = this.refMetadata.get(ref);
         if (metadata == null) {
-            this.refMetadata.put(ref, new RefMetadata(numRefs));
+            this.refMetadata.put(ref, new CellWithMeta(numRefs));
         } else {
             metadata.setNumFormulaRefs(numRefs);
         }
     }
 
     public void addContent(Ref ref, CellContent content) {
-        RefMetadata metadata = this.refMetadata.get(ref);
+        CellWithMeta metadata = this.refMetadata.get(ref);
         if (metadata == null) {
-            this.refMetadata.put(ref, new RefMetadata(content));
+            this.refMetadata.put(ref, new CellWithMeta(content));
         } else {
             metadata.setContent(content);
         }
@@ -105,8 +105,8 @@ public class SheetData {
         return this.refMetadata.keySet();
     }
 
-    public RefMetadata getRefMetadata(Ref dep) {
-        return new RefMetadata(this.refMetadata.get(dep));
+    public CellWithMeta getRefMetadata(Ref dep) {
+        return new CellWithMeta(this.refMetadata.get(dep));
     }
 
     // NOTE: now the following methods are no longer needed
