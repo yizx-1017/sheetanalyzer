@@ -36,7 +36,7 @@ public class RefWithMeta {
         }
         RefWithMeta that = (RefWithMeta) o;
         return Objects.equals(this.ref, that.ref)
-            && Objects.equals(this.edgeMeta, that.edgeMeta);
+                && Objects.equals(this.edgeMeta, that.edgeMeta);
     }
 
     @Override

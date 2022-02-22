@@ -57,11 +57,12 @@ public class TestClustering {
     // The name of the sheet should be the same as our configuration
     Assertions.assertTrue(mapping.containsKey(TestClustering.sheetName));
 
-    // Number of hashes / clusters should be 1 since all formulae only differ by cell reference
+    // Number of hashes / clusters should be 1 since all formulae only differ by
+    // cell reference
     Assertions.assertEquals(mapping.get(TestClustering.sheetName).keySet().size(), 1);
 
     // The size of the cluster should equal the number of rows in the sheet
-    List<Ref> refs = mapping.get(TestClustering.sheetName).values().iterator().next();    
+    List<Ref> refs = mapping.get(TestClustering.sheetName).values().iterator().next();
     Assertions.assertEquals(refs.size(), TestClustering.maxRows);
 
   }

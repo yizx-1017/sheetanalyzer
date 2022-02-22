@@ -5,13 +5,13 @@ public class CellContent {
     final String formula;
     final String value;
 
-    public CellContent (CellContent content) {
+    public CellContent(CellContent content) {
         this.value = content.value;
         this.formula = content.formula;
         this.isFormula = content.isFormula;
     }
 
-    public CellContent (String value, String formula, boolean isFormula) {
+    public CellContent(String value, String formula, boolean isFormula) {
         this.value = value;
         this.formula = formula;
         this.isFormula = isFormula;

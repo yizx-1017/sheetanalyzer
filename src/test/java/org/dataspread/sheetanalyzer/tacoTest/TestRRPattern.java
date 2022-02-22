@@ -20,7 +20,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.io.File;
 
-
 public class TestRRPattern {
 
     private static SheetAnalyzer sheetAnalyzer;

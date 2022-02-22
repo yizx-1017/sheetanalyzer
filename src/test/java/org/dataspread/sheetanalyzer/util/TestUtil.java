@@ -20,20 +20,20 @@ public class TestUtil {
         return file;
     }
 
-    public static File createXlsxTempFile () throws IOException {
+    public static File createXlsxTempFile() throws IOException {
         File file = File.createTempFile(prefix, xlsxSurfix);
         file.deleteOnExit();
         return file;
     }
 
     public static boolean hasSameDependencies(Map<Ref, Set<Ref>> mapA,
-                                              Map<Ref, Set<Ref>> mapB) {
+            Map<Ref, Set<Ref>> mapB) {
         return containsMapAll(mapA, mapB) && containsMapAll(mapB, mapA);
     }
 
     private static boolean containsMapAll(Map<Ref, Set<Ref>> mapA,
-                                          Map<Ref, Set<Ref>> mapB) {
-        for (Ref refB: mapB.keySet()) {
+            Map<Ref, Set<Ref>> mapB) {
+        for (Ref refB : mapB.keySet()) {
             if (!mapA.containsKey(refB)) {
                 return false;
             }
@@ -52,7 +52,7 @@ public class TestUtil {
     }
 
     public static void createAnEmptyRowWithTwoCols(Sheet sheet, int rowNum,
-                                                   int colA, int colB) {
+            int colA, int colB) {
         Row row = sheet.createRow(rowNum);
         row.createCell(colA);
         row.createCell(colB);

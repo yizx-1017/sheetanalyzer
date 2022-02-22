@@ -52,8 +52,7 @@ public class TestFFPattern {
     @BeforeAll
     public static void setUp() throws IOException, SheetNotSupportedException {
         File xlsTempFile = createFFSheet();
-        sheetAnalyzer =
-                SheetAnalyzer.createSheetAnalyzer(xlsTempFile.getAbsolutePath());
+        sheetAnalyzer = SheetAnalyzer.createSheetAnalyzer(xlsTempFile.getAbsolutePath());
     }
 
     /**

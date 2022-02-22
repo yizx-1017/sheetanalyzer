@@ -31,7 +31,7 @@ public class Offset {
         }
         Offset offset = (Offset) o;
         return this.rowOffset == offset.rowOffset
-            && this.colOffset == offset.colOffset;
+                && this.colOffset == offset.colOffset;
     }
 
     @Override

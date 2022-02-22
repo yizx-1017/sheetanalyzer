@@ -22,7 +22,7 @@ import java.io.File;
 
 public class TestFRPattern {
 
-  private static SheetAnalyzer sheetAnalyzer;
+    private static SheetAnalyzer sheetAnalyzer;
     private static final String sheetName = "FRSheet";
     private static final int maxRows = 1000;
 
@@ -35,7 +35,7 @@ public class TestFRPattern {
             Cell cellA = row.createCell(colA);
             Cell cellB = row.createCell(colB);
             Cell cellC = row.createCell(colC);
-            cellA.setCellValue(i+1);
+            cellA.setCellValue(i + 1);
             cellB.setCellValue(10);
             cellC.setCellFormula("SUM(A1:" + "B" + (i + 1) + ")");
         }

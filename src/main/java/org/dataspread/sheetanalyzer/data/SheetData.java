@@ -51,7 +51,6 @@ public class SheetData {
         });
         if (rowWise) {
             depPairList.sort(rowWiseComp);
-
         } else {
             depPairList.sort(colWiseComp);
         }
@@ -98,7 +97,7 @@ public class SheetData {
     }
 
     // Notice that in the following methods we return a copy
-    // of the underlying metadata so that the caller doesn't 
+    // of the underlying metadata so that the caller doesn't
     // accidently re-assign any of the values.
 
     public Set<Ref> getDepSet() {
@@ -110,8 +109,8 @@ public class SheetData {
     }
 
     // NOTE: now the following methods are no longer needed
-    // since we have getRefMetadata. The only reason these 
-    // are not deleted is because we want to maintain backwards 
+    // since we have getRefMetadata. The only reason these
+    // are not deleted is because we want to maintain backwards
     // compatibility.
 
     public List<Ref> getPrecList(Ref dep) {

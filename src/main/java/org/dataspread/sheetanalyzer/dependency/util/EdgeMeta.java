@@ -24,8 +24,8 @@ public class EdgeMeta {
         }
         EdgeMeta edgeMeta = (EdgeMeta) o;
         return this.patternType == edgeMeta.patternType
-            && Objects.equals(this.startOffset, edgeMeta.startOffset)
-            && Objects.equals(this.endOffset, edgeMeta.endOffset);
+                && Objects.equals(this.startOffset, edgeMeta.startOffset)
+                && Objects.equals(this.endOffset, edgeMeta.endOffset);
     }
 
     @Override

@@ -35,7 +35,7 @@ public class TestRFPattern {
             Cell cellA = row.createCell(colA);
             Cell cellB = row.createCell(colB);
             Cell cellC = row.createCell(colC);
-            cellA.setCellValue(i+1);
+            cellA.setCellValue(i + 1);
             cellB.setCellValue(10);
             cellC.setCellFormula("SUM(A" + (i + 1) + ":" + "B" + (maxRows) + ")");
         }
@@ -63,7 +63,6 @@ public class TestRFPattern {
         int queryRow = 0, queryColumn = 0;
         Ref queryRef = new RefImpl(queryRow, queryColumn);
         Set<Ref> queryResult = sheetAnalyzer.getDependents(sheetName, queryRef);
-
 
         Set<Ref> groundTruth = new HashSet<>();
         int firstRow = 0, firstColumn = 2;

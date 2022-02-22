@@ -8,29 +8,27 @@ import org.dataspread.sheetanalyzer.util.Ref;
 public class RefUtils {
     public static boolean isValidRef(Ref ref) {
         return ref.getRow() >= 0
-            && ref.getColumn() >= 0
-            && ref.getRow() <= ref.getLastRow() 
-            && ref.getColumn() <= ref.getLastColumn();
+                && ref.getColumn() >= 0
+                && ref.getRow() <= ref.getLastRow()
+                && ref.getColumn() <= ref.getLastColumn();
     }
 
     public static Rectangle refToRect(Ref ref) {
         return RectangleFloat.create(
-            ref.getRow(),
-            ref.getColumn(),
-            (float) 0.5 + ref.getLastRow(),
-            (float) 0.5 + ref.getLastColumn()
-        );
+                ref.getRow(),
+                ref.getColumn(),
+                (float) 0.5 + ref.getLastRow(),
+                (float) 0.5 + ref.getLastColumn());
     }
 
     public static Ref coordToRef(Ref ref, int firstRow, int firstCol, int lastRow, int lastCol) {
         return new RefImpl(
-            ref.getBookName(),
-            ref.getSheetName(),
-            firstRow,
-            firstCol,
-            lastRow,
-            lastCol
-        );
+                ref.getBookName(),
+                ref.getSheetName(),
+                firstRow,
+                firstCol,
+                lastRow,
+                lastCol);
     }
 
     public static Offset refToOffset(Ref prec, Ref dep, boolean isStart) {
