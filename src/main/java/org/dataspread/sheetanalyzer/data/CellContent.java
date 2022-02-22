@@ -1,11 +1,17 @@
 package org.dataspread.sheetanalyzer.data;
 
 public class CellContent {
-    final String value;
-    final String formula;
     final boolean isFormula;
+    final String formula;
+    final String value;
 
-    public CellContent (String value, String formula, boolean isFormula) {
+    public CellContent(CellContent content) {
+        this.value = content.value;
+        this.formula = content.formula;
+        this.isFormula = content.isFormula;
+    }
+
+    public CellContent(String value, String formula, boolean isFormula) {
         this.value = value;
         this.formula = formula;
         this.isFormula = isFormula;

@@ -1,11 +1,11 @@
 package org.dataspread.sheetanalyzer;
 
+import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
+import org.dataspread.sheetanalyzer.dependency.util.RefWithMeta;
 import org.dataspread.sheetanalyzer.analyzer.SheetAnalyzerImpl;
 import org.dataspread.sheetanalyzer.data.CellContent;
-import org.dataspread.sheetanalyzer.dependency.util.RefWithMeta;
 import org.dataspread.sheetanalyzer.util.Pair;
 import org.dataspread.sheetanalyzer.util.Ref;
-import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
 
 import java.util.List;
 import java.util.Map;
@@ -33,8 +33,8 @@ public abstract class SheetAnalyzer {
      * @return
      * @throws SheetNotSupportedException
      */
-    public static SheetAnalyzer createSheetAnalyzer(Map<String,
-            String[][]> spreadsheetContent) throws SheetNotSupportedException {
+    public static SheetAnalyzer createSheetAnalyzer(Map<String, String[][]> spreadsheetContent)
+            throws SheetNotSupportedException {
         return new SheetAnalyzerImpl(spreadsheetContent);
     }
 
@@ -57,7 +57,7 @@ public abstract class SheetAnalyzer {
 
     /**
      * @return a map between sheetnames and the string recording compression
-     * information
+     *         information
      */
     public abstract Map<String, String> getCompressInfo();
 
@@ -79,6 +79,7 @@ public abstract class SheetAnalyzer {
 
     /**
      * Get the formula clusters
+     * 
      * @return
      */
     public abstract Map<String, Map<String, List<Ref>>> getFormulaClusters();

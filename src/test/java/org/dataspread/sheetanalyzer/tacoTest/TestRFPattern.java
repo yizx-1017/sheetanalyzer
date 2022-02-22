@@ -1,25 +1,24 @@
 package org.dataspread.sheetanalyzer.tacoTest;
 
+import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
+import org.dataspread.sheetanalyzer.util.TestUtil;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.dataspread.sheetanalyzer.SheetAnalyzer;
+import org.dataspread.sheetanalyzer.util.RefImpl;
+import org.dataspread.sheetanalyzer.util.Ref;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.junit.jupiter.api.Assertions;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-
-import org.dataspread.sheetanalyzer.util.Ref;
-import org.dataspread.sheetanalyzer.util.RefImpl;
-import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.dataspread.sheetanalyzer.util.TestUtil;
-import org.dataspread.sheetanalyzer.SheetAnalyzer;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.io.File;
 
 public class TestRFPattern {
 
@@ -36,7 +35,7 @@ public class TestRFPattern {
             Cell cellA = row.createCell(colA);
             Cell cellB = row.createCell(colB);
             Cell cellC = row.createCell(colC);
-            cellA.setCellValue(i+1);
+            cellA.setCellValue(i + 1);
             cellB.setCellValue(10);
             cellC.setCellFormula("SUM(A" + (i + 1) + ":" + "B" + (maxRows) + ")");
         }
@@ -64,7 +63,6 @@ public class TestRFPattern {
         int queryRow = 0, queryColumn = 0;
         Ref queryRef = new RefImpl(queryRow, queryColumn);
         Set<Ref> queryResult = sheetAnalyzer.getDependents(sheetName, queryRef);
-
 
         Set<Ref> groundTruth = new HashSet<>();
         int firstRow = 0, firstColumn = 2;

@@ -7,11 +7,17 @@ import java.util.List;
 import java.util.Set;
 
 public interface DependencyGraph {
- Set<Ref> getDependents(Ref precedent);
- void add(Ref precedent, Ref dependent);
- void clearDependents(Ref dependent);
- void addBatch(List<Pair<Ref, Ref>> edgeBatch);
- String getCompressInfo();
- long getNumEdges();
- long getNumVertices();
+  void addBatch(List<Pair<Ref, Ref>> edgeBatch);
+
+  void add(Ref precedent, Ref dependent);
+
+  Set<Ref> getDependents(Ref precedent);
+
+  void clearDependents(Ref dependent);
+
+  String getCompressInfo();
+
+  long getNumVertices();
+
+  long getNumEdges();
 }

@@ -18,27 +18,28 @@ import static org.dataspread.sheetanalyzer.dependency.util.PatternTools.*;
 
 public class DependencyGraphTACO implements DependencyGraph {
 
-    protected HashMap<Ref, List<RefWithMeta>> precToDepList = new HashMap<>();
-    protected HashMap<Ref, List<RefWithMeta>> depToPrecList = new HashMap<>();
+    protected Map<Ref, List<RefWithMeta>> precToDepList = new HashMap<>();
+    protected Map<Ref, List<RefWithMeta>> depToPrecList = new HashMap<>();
     private RTree<Ref, Rectangle> _rectToRef = RTree.create();
 
     private final CompressInfoComparator compressInfoComparator = new CompressInfoComparator();
 
-    public HashMap<Ref, List<RefWithMeta>> getCompressedGraph() {
-        return precToDepList;
+    public Map<Ref, List<RefWithMeta>> getCompressedGraph() {
+        return this.precToDepList;
     }
 
     public Set<Ref> getDependents(Ref precedent) {
-        final boolean isDirectDep = false;
         LinkedHashSet<Ref> result = new LinkedHashSet<>();
-
-        if (RefUtils.isValidRef(precedent)) getDependentsInternal(precedent, result, isDirectDep);
+        if (RefUtils.isValidRef(precedent)) {
+            final boolean isDirectDep = false;
+            getDependentsInternal(precedent, result, isDirectDep);
+        }
         return result;
     }
 
     private void getDependentsInternal(Ref precUpdate,
-                                       LinkedHashSet<Ref> result,
-                                       boolean isDirectDep) {
+            LinkedHashSet<Ref> result,
+            boolean isDirectDep) {
         AtomicReference<RTree<Ref, Rectangle>> resultSet = new AtomicReference<>(RTree.create());
         Queue<Ref> updateQueue = new LinkedList<>();
         updateQueue.add(precUpdate);
@@ -56,7 +57,9 @@ public class DependencyGraphTACO implements DependencyGraph {
                         overlapRef.forEach(olRef -> {
                             resultSet.set(resultSet.get().add(olRef, RefUtils.refToRect(olRef)));
                             result.add(olRef);
-                            if (!isDirectDep) updateQueue.add(olRef);
+                            if (!isDirectDep) {
+                                updateQueue.add(olRef);
+                            }
                         });
                     });
                 });
@@ -98,35 +101,32 @@ public class DependencyGraphTACO implements DependencyGraph {
     }
 
     public void add(Ref precedent, Ref dependent) {
-        LinkedList<CompressInfo> compressInfoList =
-                findCompressInfo(precedent, dependent);
+        LinkedList<CompressInfo> compressInfoList = findCompressInfo(precedent, dependent);
         if (compressInfoList.isEmpty()) {
-            insertMemEntry(precedent, dependent,
-                    new EdgeMeta(PatternType.NOTYPE, Offset.noOffset, Offset.noOffset));
+            insertMemEntry(precedent, dependent, new EdgeMeta(PatternType.NOTYPE, Offset.noOffset, Offset.noOffset));
         } else {
-            CompressInfo selectedInfo =
-                    Collections.min(compressInfoList, compressInfoComparator);
+            CompressInfo selectedInfo = Collections.min(compressInfoList, compressInfoComparator);
             updateOneCompressEntry(selectedInfo);
         }
     }
 
     public void clearDependents(Ref delDep) {
-        assert (delDep.getRow() == delDep.getLastRow() &&
-                delDep.getColumn() == delDep.getLastColumn());
-
+        assert (delDep.getRow() == delDep.getLastRow() && delDep.getColumn() == delDep.getLastColumn());
         findOverlappingRefs(delDep).forEachRemaining(depRange -> {
             findPrecs(depRange).forEach(precRangeWithMeta -> {
                 Ref precRange = precRangeWithMeta.getRef();
                 EdgeMeta edgeMeta = precRangeWithMeta.getEdgeMeta();
-                List<Pair<Ref, RefWithMeta>> newEdges =
-                        deleteOneCell(precRange, depRange, edgeMeta, delDep);
+                List<Pair<Ref, RefWithMeta>> newEdges = deleteOneCell(precRange, depRange, edgeMeta, delDep);
                 deleteMemEntry(precRange, depRange, edgeMeta);
                 newEdges.forEach(pair -> {
                     Ref newPrec = pair.first;
                     Ref newDep = pair.second.getRef();
                     EdgeMeta newEdgeMeta = pair.second.getEdgeMeta();
-                    if (newDep.getType() == Ref.RefType.CELL) add(newPrec, newDep);
-                    else insertMemEntry(newPrec, newDep, newEdgeMeta);
+                    if (newDep.getType() == Ref.RefType.CELL) {
+                        add(newPrec, newDep);
+                    } else {
+                        insertMemEntry(newPrec, newDep, newEdgeMeta);
+                    }
                 });
             });
         });
@@ -141,9 +141,10 @@ public class DependencyGraphTACO implements DependencyGraph {
     }
 
     private void updateOneCompressEntry(CompressInfo selectedInfo) {
-        if (selectedInfo.isDuplicate) return;
+        if (selectedInfo.isDuplicate) {
+            return;
+        }
         deleteMemEntry(selectedInfo.candPrec, selectedInfo.candDep, selectedInfo.edgeMeta);
-
         Ref newPrec = selectedInfo.prec.getBoundingBox(selectedInfo.candPrec);
         Ref newDep = selectedInfo.dep.getBoundingBox(selectedInfo.candDep);
         Pair<Offset, Offset> offsetPair = computeOffset(newPrec, newDep, selectedInfo.compType);
@@ -151,8 +152,8 @@ public class DependencyGraphTACO implements DependencyGraph {
     }
 
     private void insertMemEntry(Ref prec,
-                                Ref dep,
-                                EdgeMeta edgeMeta) {
+            Ref dep,
+            EdgeMeta edgeMeta) {
         List<RefWithMeta> depList = precToDepList.getOrDefault(prec, new LinkedList<>());
         depList.add(new RefWithMeta(dep, edgeMeta));
         precToDepList.put(prec, depList);
@@ -166,18 +167,22 @@ public class DependencyGraphTACO implements DependencyGraph {
     }
 
     private void deleteMemEntry(Ref prec,
-                                Ref dep,
-                                EdgeMeta edgeMeta) {
+            Ref dep,
+            EdgeMeta edgeMeta) {
         List<RefWithMeta> depList = precToDepList.get(prec);
         if (depList != null) {
             depList.remove(new RefWithMeta(dep, edgeMeta));
-            if (depList.isEmpty()) precToDepList.remove(prec);
+            if (depList.isEmpty()) {
+                precToDepList.remove(prec);
+            }
         }
 
         List<RefWithMeta> precList = depToPrecList.get(dep);
         if (precList != null) {
             precList.remove(new RefWithMeta(prec, edgeMeta));
-            if (precList.isEmpty()) depToPrecList.remove(dep);
+            if (precList.isEmpty()) {
+                depToPrecList.remove(dep);
+            }
         }
 
         _rectToRef = _rectToRef.delete(prec, RefUtils.refToRect(prec));
@@ -201,9 +206,8 @@ public class DependencyGraphTACO implements DependencyGraph {
             };
         }
 
-        Iterator<Entry<Ref, Rectangle>> entryIter =
-                _rectToRef.search(getRectangleFromRef(updateRef))
-                        .toBlocking().getIterator();
+        Iterator<Entry<Ref, Rectangle>> entryIter = _rectToRef.search(getRectangleFromRef(updateRef)).toBlocking()
+                .getIterator();
         refIter = Iterators.transform(entryIter, new Function<Entry<Ref, Rectangle>, Ref>() {
             @Override
             public @Nullable Ref apply(@Nullable Entry<Ref, Rectangle> refRectangleEntry) {
@@ -227,8 +231,8 @@ public class DependencyGraphTACO implements DependencyGraph {
     }
 
     private List<Pair<Ref, RefWithMeta>> deleteOneCell(Ref prec, Ref dep,
-                                                       EdgeMeta edgeMeta,
-                                                       Ref delDep) {
+            EdgeMeta edgeMeta,
+            Ref delDep) {
         List<Pair<Ref, RefWithMeta>> ret = new LinkedList<>();
         boolean isDirectPrec = true;
         splitRangeByOneCell(dep, delDep).forEach(splitDep -> {
@@ -244,7 +248,9 @@ public class DependencyGraphTACO implements DependencyGraph {
                 ret.add(new Pair<>(splitPrec, new RefWithMeta(splitDep, edgeMeta)));
             }
         });
-        if (ret.isEmpty()) ret.add(new Pair<>(prec, new RefWithMeta(dep, edgeMeta)));
+        if (ret.isEmpty()) {
+            ret.add(new Pair<>(prec, new RefWithMeta(dep, edgeMeta)));
+        }
         return ret;
     }
 
@@ -257,34 +263,40 @@ public class DependencyGraphTACO implements DependencyGraph {
         int delRow = delDep.getRow();
         int delCol = delDep.getColumn();
 
-        assert(firstRow == lastRow || firstCol == lastCol);
+        assert (firstRow == lastRow || firstCol == lastCol);
         List<Ref> refList = new LinkedList<>();
 
         // This range is actually a cell
-        if (firstRow == lastRow && firstCol == lastCol) return refList;
+        if (firstRow == lastRow && firstCol == lastCol) {
+            return refList;
+        }
 
         if (firstRow == lastRow) { // Row range
-            if (delCol != firstCol)
+            if (delCol != firstCol) {
                 refList.add(RefUtils.coordToRef(dep, firstRow, firstCol, lastRow, delCol - 1));
-            if (delCol != lastCol)
+            }
+            if (delCol != lastCol) {
                 refList.add(RefUtils.coordToRef(dep, firstRow, delCol + 1, lastRow, lastCol));
+            }
         } else { // Column range
-            if (delRow != firstRow)
+            if (delRow != firstRow) {
                 refList.add(RefUtils.coordToRef(dep, firstRow, firstCol, delRow - 1, lastCol));
-            if (delRow != lastRow)
+            }
+            if (delRow != lastRow) {
                 refList.add(RefUtils.coordToRef(dep, delRow + 1, firstCol, lastRow, lastCol));
+            }
         }
 
         return refList;
     }
 
     private Pair<Offset, Offset> computeOffset(Ref prec,
-                                               Ref dep,
-                                               PatternType compType) {
+            Ref dep,
+            PatternType compType) {
         Offset startOffset;
         Offset endOffset;
 
-        assert(compType != PatternType.NOTYPE);
+        assert (compType != PatternType.NOTYPE);
         switch (compType) {
             case TYPEZERO:
             case TYPEONE:
@@ -315,8 +327,8 @@ public class DependencyGraphTACO implements DependencyGraph {
     }
 
     private CompressInfo findCompressionPatternWithGap(Ref prec, Ref dep,
-                                                       Ref candPrec, Ref candDep, EdgeMeta metaData,
-                                                       int gapSize, PatternType patternType) {
+            Ref candPrec, Ref candDep, EdgeMeta metaData,
+            int gapSize, PatternType patternType) {
         if (dep.getColumn() == candDep.getColumn() && candDep.getLastRow() - dep.getRow() == -(gapSize + 1)) {
             if (metaData.patternType == PatternType.NOTYPE) {
                 Offset offsetStartA = RefUtils.refToOffset(prec, dep, true);
@@ -385,8 +397,7 @@ public class DependencyGraphTACO implements DependencyGraph {
         for (int i = 0; i < PatternType.NOTYPE.ordinal()
                 - PatternType.TYPEFIVE.ordinal(); i++) {
             int gapSize = i + 1;
-            PatternType patternType =
-                    PatternType.values()[PatternType.TYPEFIVE.ordinal() + i];
+            PatternType patternType = PatternType.values()[PatternType.TYPEFIVE.ordinal() + i];
             if (compressInfoList.isEmpty()) {
                 findOverlapAndAdjacency(dep, gapSize).forEach(candDep -> {
                     findPrecs(candDep).forEach(candPrecWithMeta -> {
@@ -396,14 +407,15 @@ public class DependencyGraphTACO implements DependencyGraph {
                         addToCompressionInfoList(compressInfoList, compRes);
                     });
                 });
-            } else break;
+            } else
+                break;
         }
 
         return compressInfoList;
     }
 
     private void addToCompressionInfoList(LinkedList<CompressInfo> compressInfoList,
-                                          CompressInfo compRes) {
+            CompressInfo compRes) {
         Boolean isDuplicate = compRes.isDuplicate;
         PatternType compType = compRes.compType;
         if (isDuplicate || compType != PatternType.NOTYPE) {
@@ -412,13 +424,14 @@ public class DependencyGraphTACO implements DependencyGraph {
     }
 
     private CompressInfo findCompressionPattern(Ref prec, Ref dep,
-                                                Ref candPrec, Ref candDep, EdgeMeta metaData) {
+            Ref candPrec, Ref candDep, EdgeMeta metaData) {
         PatternType curCompType = metaData.patternType;
 
         // Check the duplicate edge
-        if (isSubsume(candPrec, prec) && isSubsume(candDep, dep))
+        if (isSubsume(candPrec, prec) && isSubsume(candDep, dep)) {
             return new CompressInfo(true, Direction.NODIRECTION, curCompType,
                     prec, dep, candPrec, candDep, metaData);
+        }
 
         // Otherwise, find the compression type
         // Guarantee the adjacency
@@ -429,37 +442,42 @@ public class DependencyGraphTACO implements DependencyGraph {
         }
 
         Ref lastCandPrec = findLastPrec(candPrec, candDep, metaData, direction);
-        PatternType compressType =
-                findCompPatternHelper(direction, prec, dep, candPrec, candDep, lastCandPrec);
+        PatternType compressType = findCompPatternHelper(direction, prec, dep, candPrec, candDep, lastCandPrec);
         PatternType retCompType = PatternType.NOTYPE;
-        if (curCompType == PatternType.NOTYPE) retCompType = compressType;
-        else if (curCompType == compressType) retCompType = compressType;
+        if (curCompType == PatternType.NOTYPE) {
+            retCompType = compressType;
+        } else if (curCompType == compressType) {
+            retCompType = compressType;
+        }
 
-        return new CompressInfo(false, direction, retCompType,
-                prec, dep, candPrec, candDep, metaData);
+        return new CompressInfo(false, direction, retCompType, prec, dep, candPrec, candDep, metaData);
     }
 
     private PatternType findCompPatternHelper(Direction direction,
-                                              Ref prec, Ref dep,
-                                              Ref candPrec, Ref candDep,
-                                              Ref lastCandPrec) {
+            Ref prec, Ref dep,
+            Ref candPrec, Ref candDep,
+            Ref lastCandPrec) {
         PatternType compressType = PatternType.NOTYPE;
         if (isCompressibleTypeOne(lastCandPrec, prec, direction)) {
             compressType = PatternType.TYPEONE;
-            if (isCompressibleTypeZero(prec, dep, lastCandPrec))
+            if (isCompressibleTypeZero(prec, dep, lastCandPrec)) {
                 compressType = PatternType.TYPEZERO;
-        } else if (isCompressibleTypeTwo(lastCandPrec, prec, direction))
+            }
+        } else if (isCompressibleTypeTwo(lastCandPrec, prec, direction)) {
             compressType = PatternType.TYPETWO;
-        else if (isCompressibleTypeThree(lastCandPrec, prec, direction))
+        } else if (isCompressibleTypeThree(lastCandPrec, prec, direction)) {
             compressType = PatternType.TYPETHREE;
-        else if (isCompressibleTypeFour(lastCandPrec, prec))
+        } else if (isCompressibleTypeFour(lastCandPrec, prec)) {
             compressType = PatternType.TYPEFOUR;
+        }
 
         return compressType;
     }
 
     private boolean isSubsume(Ref large, Ref small) {
-        if (large.getOverlap(small) == null) return false;
+        if (large.getOverlap(small) == null) {
+            return false;
+        }
         return large.getOverlap(small).equals(small);
     }
 
@@ -469,18 +487,18 @@ public class DependencyGraphTACO implements DependencyGraph {
 
         findOverlappingRefs(ref).forEachRemaining(res::addLast);
         Arrays.stream(Direction.values()).filter(direction -> direction != Direction.NODIRECTION)
-                .forEach(direction ->
-                        findOverlappingRefs(shiftRef(ref, direction, shift_step))
-                                .forEachRemaining(adjRef -> {
-                                    if (isValidAdjacency(adjRef, ref, shift_step)) res.addLast(adjRef); // valid adjacency
-                                })
-                );
+                .forEach(direction -> findOverlappingRefs(shiftRef(ref, direction, shift_step))
+                        .forEachRemaining(adjRef -> {
+                            if (isValidAdjacency(adjRef, ref, shift_step)) {
+                                res.addLast(adjRef); // valid adjacency
+                            }
+                        }));
 
         return res;
     }
 
     public String getCompressInfo() {
-        HashMap<PatternType, Integer> typeCount = new HashMap();
+        Map<PatternType, Integer> typeCount = new HashMap<>();
         depToPrecList.keySet().forEach(dep -> {
             List<RefWithMeta> precWithMetaList = depToPrecList.get(dep);
             precWithMetaList.forEach(precWithMeta -> {
@@ -493,7 +511,7 @@ public class DependencyGraphTACO implements DependencyGraph {
 
         StringBuilder stringBuilder = new StringBuilder();
         int gapCount = 0;
-        for(PatternType pType : PatternType.values()) {
+        for (PatternType pType : PatternType.values()) {
             int count = typeCount.getOrDefault(pType, 0);
             String label = pType.label;
             if (pType == PatternType.TYPEELEVEN) {
@@ -519,12 +537,15 @@ public class DependencyGraphTACO implements DependencyGraph {
 
         @Override
         public int compare(CompressInfo infoA, CompressInfo infoB) {
-            if (infoA.isDuplicate) return -1;
-            else if (infoB.isDuplicate) return 1;
-            else {
+            if (infoA.isDuplicate) {
+                return -1;
+            } else if (infoB.isDuplicate) {
+                return 1;
+            } else {
                 int directionResult = infoA.direction.compareTo(infoB.direction);
-                if (directionResult != 0) return directionResult;
-                else {
+                if (directionResult != 0) {
+                    return directionResult;
+                } else {
                     return infoA.compType.compareTo(infoB.compType);
                 }
             }
@@ -542,10 +563,10 @@ public class DependencyGraphTACO implements DependencyGraph {
         EdgeMeta edgeMeta;
 
         CompressInfo(Boolean isDuplicate,
-                     Direction direction,
-                     PatternType compType,
-                     Ref prec, Ref dep,
-                     Ref candPrec, Ref candDep, EdgeMeta edgeMeta) {
+                Direction direction,
+                PatternType compType,
+                Ref prec, Ref dep,
+                Ref candPrec, Ref candDep, EdgeMeta edgeMeta) {
             this.isDuplicate = isDuplicate;
             this.direction = direction;
             this.compType = compType;

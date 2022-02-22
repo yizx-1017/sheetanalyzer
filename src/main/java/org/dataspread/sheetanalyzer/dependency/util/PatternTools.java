@@ -1,9 +1,9 @@
 package org.dataspread.sheetanalyzer.dependency.util;
 
-import com.github.davidmoten.rtree.geometry.Rectangle;
 import com.github.davidmoten.rtree.geometry.internal.RectangleFloat;
-import org.dataspread.sheetanalyzer.util.Ref;
+import com.github.davidmoten.rtree.geometry.Rectangle;
 import org.dataspread.sheetanalyzer.util.RefImpl;
+import org.dataspread.sheetanalyzer.util.Ref;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -14,27 +14,27 @@ public class PatternTools {
     private final static int FIRST_COL = 0;
 
     public static Rectangle getRectangleFromRef(Ref ref) {
-        return RectangleFloat.create(ref.getRow(),ref.getColumn(),
-                (float) 0.5 + ref.getLastRow(), (float) 0.5 + ref.getLastColumn());
+        return RectangleFloat.create(
+                ref.getRow(),
+                ref.getColumn(),
+                (float) 0.5 + ref.getLastRow(),
+                (float) 0.5 + ref.getLastColumn());
     }
 
-    public static boolean isCompressibleTypeOne(Ref lastCandPrec, Ref prec,
-                                         Direction direction) {
+    public static boolean isCompressibleTypeOne(Ref lastCandPrec, Ref prec, Direction direction) {
         Ref shiftedRef = shiftRef(lastCandPrec, direction, DEAULT_SHIFT_STEP);
         return shiftedRef != null && shiftedRef.equals(prec);
     }
 
     // Only called after isCompressibleTypeOne is true
-    public static boolean isCompressibleTypeZero(Ref prec, Ref dep,
-                                                 Ref lastCandPrec) {
+    public static boolean isCompressibleTypeZero(Ref prec, Ref dep, Ref lastCandPrec) {
         boolean isTypeZero = false;
-        for (Direction direction: Direction.values()) {
+        for (Direction direction : Direction.values()) {
             if (direction != Direction.NODIRECTION && !isTypeZero) {
                 Ref shiftedRef = shiftRef(prec, direction, DEAULT_SHIFT_STEP);
                 if (shiftedRef != null && shiftedRef.equals(dep)) { // check adjacency
                     Ref lastCandDep = shiftRef(lastCandPrec, direction, DEAULT_SHIFT_STEP);
-                    isTypeZero = (lastCandDep != null && lastCandDep.equals(prec)) ||
-                            lastCandPrec.equals(dep);
+                    isTypeZero = (lastCandDep != null && lastCandDep.equals(prec)) || lastCandPrec.equals(dep);
                 }
             }
         }
@@ -42,80 +42,85 @@ public class PatternTools {
     }
 
     // Relative start, fixed end
-    public static boolean isCompressibleTypeTwo(Ref lastCandPrec, Ref prec,
-                                         Direction direction) {
-        if (direction == Direction.TODOWN || direction == Direction.TORIGHT)
+    public static boolean isCompressibleTypeTwo(Ref lastCandPrec, Ref prec, Direction direction) {
+        if (direction == Direction.TODOWN || direction == Direction.TORIGHT) {
             return isShrinkedStart(lastCandPrec, prec, direction);
-        else
+        } else {
             return isExtendedStart(lastCandPrec, prec, direction);
+        }
     }
 
-    public static boolean isCompressibleTypeThree(Ref lastCandPrec, Ref prec,
-                                           Direction direction) {
-        if (direction == Direction.TODOWN || direction == Direction.TORIGHT)
+    public static boolean isCompressibleTypeThree(Ref lastCandPrec, Ref prec, Direction direction) {
+        if (direction == Direction.TODOWN || direction == Direction.TORIGHT) {
             return isExtendedEnd(lastCandPrec, prec, direction);
-        else
+        } else {
             return isShrinkedEnd(lastCandPrec, prec, direction);
+        }
     }
 
-    public static boolean isExtendedEnd(Ref lastCandPrec, Ref prec,
-                                 Direction direction) {
+    public static boolean isExtendedEnd(Ref lastCandPrec, Ref prec, Direction direction) {
         if (direction == Direction.TODOWN) {
-            return (lastCandPrec.getRow() == prec.getRow() &&
-                    lastCandPrec.getColumn() == prec.getColumn() &&
-                    lastCandPrec.getLastRow() + 1 == prec.getLastRow() &&
-                    lastCandPrec.getLastColumn() == prec.getLastColumn());
+            return lastCandPrec.getRow() == prec.getRow()
+                    && lastCandPrec.getColumn() == prec.getColumn()
+                    && lastCandPrec.getLastRow() + 1 == prec.getLastRow()
+                    && lastCandPrec.getLastColumn() == prec.getLastColumn();
         } else if (direction == Direction.TORIGHT) {
-            return (lastCandPrec.getRow() == prec.getRow() &&
-                    lastCandPrec.getColumn() == prec.getColumn() &&
-                    lastCandPrec.getLastRow() == prec.getLastRow() &&
-                    lastCandPrec.getLastColumn() + 1 == prec.getLastColumn());
-        } else return false;
+            return lastCandPrec.getRow() == prec.getRow()
+                    && lastCandPrec.getColumn() == prec.getColumn()
+                    && lastCandPrec.getLastRow() == prec.getLastRow()
+                    && lastCandPrec.getLastColumn() + 1 == prec.getLastColumn();
+        } else {
+            return false;
+        }
     }
 
     public static boolean isShrinkedEnd(Ref lastCandPrec, Ref prec,
-                                 Direction direction) {
+            Direction direction) {
         if (direction == Direction.TOUP) {
-            return (lastCandPrec.getRow() == prec.getRow() &&
-                    lastCandPrec.getColumn() == prec.getColumn() &&
-                    lastCandPrec.getLastRow() - 1 == prec.getLastRow() &&
-                    lastCandPrec.getLastColumn() == prec.getLastColumn());
+            return lastCandPrec.getRow() == prec.getRow()
+                    && lastCandPrec.getColumn() == prec.getColumn()
+                    && lastCandPrec.getLastRow() - 1 == prec.getLastRow()
+                    && lastCandPrec.getLastColumn() == prec.getLastColumn();
         } else if (direction == Direction.TOLEFT) {
-            return (lastCandPrec.getRow() == prec.getRow() &&
-                    lastCandPrec.getColumn() == prec.getColumn() &&
-                    lastCandPrec.getLastRow() == prec.getLastRow() &&
-                    lastCandPrec.getLastColumn() - 1 == prec.getLastColumn());
-        } else return false;
+            return lastCandPrec.getRow() == prec.getRow()
+                    && lastCandPrec.getColumn() == prec.getColumn()
+                    && lastCandPrec.getLastRow() == prec.getLastRow()
+                    && lastCandPrec.getLastColumn() - 1 == prec.getLastColumn();
+        } else {
+            return false;
+        }
     }
 
-    public static boolean isShrinkedStart(Ref lastCandPrec, Ref prec,
-                                   Direction direction) {
+    public static boolean isShrinkedStart(Ref lastCandPrec, Ref prec, Direction direction) {
         if (direction == Direction.TODOWN) {
-            return (lastCandPrec.getRow() + 1 == prec.getRow() &&
-                    lastCandPrec.getColumn() == prec.getColumn() &&
-                    lastCandPrec.getLastRow() == prec.getLastRow() &&
-                    lastCandPrec.getLastColumn() == prec.getLastColumn());
+            return lastCandPrec.getRow() + 1 == prec.getRow()
+                    && lastCandPrec.getColumn() == prec.getColumn()
+                    && lastCandPrec.getLastRow() == prec.getLastRow()
+                    && lastCandPrec.getLastColumn() == prec.getLastColumn();
         } else if (direction == Direction.TORIGHT) {
-            return (lastCandPrec.getRow() == prec.getRow() &&
-                    lastCandPrec.getColumn() + 1 == prec.getColumn() &&
-                    lastCandPrec.getLastRow() == prec.getLastRow() &&
-                    lastCandPrec.getLastColumn() == prec.getLastColumn());
-        } else return false;
+            return lastCandPrec.getRow() == prec.getRow()
+                    && lastCandPrec.getColumn() + 1 == prec.getColumn()
+                    && lastCandPrec.getLastRow() == prec.getLastRow()
+                    && lastCandPrec.getLastColumn() == prec.getLastColumn();
+        } else {
+            return false;
+        }
     }
 
-    public static boolean isExtendedStart(Ref lastCandPrec, Ref prec,
-                                 Direction direction) {
+    public static boolean isExtendedStart(Ref lastCandPrec, Ref prec, Direction direction) {
         if (direction == Direction.TOUP) {
-            return (lastCandPrec.getRow() - 1 == prec.getRow() &&
-                    lastCandPrec.getColumn() == prec.getColumn() &&
-                    lastCandPrec.getLastRow() == prec.getLastRow() &&
-                    lastCandPrec.getLastColumn() == prec.getLastColumn());
+            return lastCandPrec.getRow() - 1 == prec.getRow()
+                    && lastCandPrec.getColumn() == prec.getColumn()
+                    && lastCandPrec.getLastRow() == prec.getLastRow()
+                    && lastCandPrec.getLastColumn() == prec.getLastColumn();
         } else if (direction == Direction.TOLEFT) {
-            return (lastCandPrec.getRow() == prec.getRow() &&
-                    lastCandPrec.getColumn() - 1 == prec.getColumn() &&
-                    lastCandPrec.getLastRow() == prec.getLastRow() &&
-                    lastCandPrec.getLastColumn() == prec.getLastColumn());
-        } else return false;
+            return lastCandPrec.getRow() == prec.getRow()
+                    && lastCandPrec.getColumn() - 1 == prec.getColumn()
+                    && lastCandPrec.getLastRow() == prec.getLastRow()
+                    && lastCandPrec.getLastColumn() == prec.getLastColumn();
+        } else {
+            return false;
+        }
     }
 
     public static boolean isCompressibleTypeFour(Ref lastCandPrec, Ref prec) {
@@ -127,31 +132,43 @@ public class PatternTools {
         switch (direction) {
             case TOLEFT:
                 if (ref.getColumn() != FIRST_COL) {
-                    res = new RefImpl(ref.getBookName(),
+                    res = new RefImpl(
+                            ref.getBookName(),
                             ref.getSheetName(),
-                            ref.getRow(), ref.getColumn() - shift_step,
-                            ref.getLastRow(), ref.getLastColumn() - shift_step);
+                            ref.getRow(),
+                            ref.getColumn() - shift_step,
+                            ref.getLastRow(),
+                            ref.getLastColumn() - shift_step);
                 }
                 break;
             case TORIGHT:
-                res = new RefImpl(ref.getBookName(),
+                res = new RefImpl(
+                        ref.getBookName(),
                         ref.getSheetName(),
-                        ref.getRow(), ref.getColumn() + shift_step,
-                        ref.getLastRow(), ref.getLastColumn() + shift_step);
+                        ref.getRow(),
+                        ref.getColumn() + shift_step,
+                        ref.getLastRow(),
+                        ref.getLastColumn() + shift_step);
                 break;
             case TOUP:
                 if (ref.getRow() != FIRST_ROW) {
-                    res = new RefImpl(ref.getBookName(),
+                    res = new RefImpl(
+                            ref.getBookName(),
                             ref.getSheetName(),
-                            ref.getRow() - shift_step, ref.getColumn(),
-                            ref.getLastRow() - shift_step, ref.getLastColumn());
+                            ref.getRow() - shift_step,
+                            ref.getColumn(),
+                            ref.getLastRow() - shift_step,
+                            ref.getLastColumn());
                 }
                 break;
             default: // TODOWN
-                res = new RefImpl(ref.getBookName(),
+                res = new RefImpl(
+                        ref.getBookName(),
                         ref.getSheetName(),
-                        ref.getRow() + shift_step, ref.getColumn(),
-                        ref.getLastRow() + shift_step, ref.getLastColumn());
+                        ref.getRow() + shift_step,
+                        ref.getColumn(),
+                        ref.getLastRow() + shift_step,
+                        ref.getLastColumn());
         }
         return res;
     }
@@ -162,34 +179,28 @@ public class PatternTools {
         int adjFirstCol = refA.getColumn();
         int adjLastRow = refA.getLastRow();
         int adjLastCol = refA.getLastColumn();
-
         int firstRow = refB.getRow();
         int firstCol = refB.getColumn();
         int lastRow = refB.getLastRow();
         int lastCol = refB.getLastColumn();
-
-        if (adjFirstRow == firstRow && adjLastRow == lastRow
-                && adjLastCol + shiftStep == firstCol) { // To Left
+        if (adjFirstRow == firstRow && adjLastRow == lastRow && adjLastCol + shiftStep == firstCol) { // To Left
             return Direction.TOLEFT;
-        } else if (adjFirstRow == firstRow && adjLastRow == lastRow
-                && lastCol + shiftStep == adjFirstCol) { // To Right
+        } else if (adjFirstRow == firstRow && adjLastRow == lastRow && lastCol + shiftStep == adjFirstCol) { // To Right
             return Direction.TORIGHT;
-        } else if (adjFirstCol == firstCol && adjLastCol == lastCol
-                && adjLastRow + shiftStep == firstRow)
+        } else if (adjFirstCol == firstCol && adjLastCol == lastCol && adjLastRow + shiftStep == firstRow)
             return Direction.TOUP;
-        else if (adjFirstCol == firstCol && adjLastCol == lastCol
-                && lastRow + shiftStep == adjFirstRow)
+        else if (adjFirstCol == firstCol && adjLastCol == lastCol && lastRow + shiftStep == adjFirstRow) {
             return Direction.TODOWN;
-        else
+        } else {
             return Direction.NODIRECTION;
+        }
     }
 
     public static boolean isValidAdjacency(Ref adjRef, Ref ref, int shiftStep) {
         return findAdjacencyDirection(adjRef, ref, shiftStep) != Direction.NODIRECTION;
     }
 
-    public static Set<Ref> findUpdateDepRef(Ref prec, Ref dep,
-                                       EdgeMeta edgeMeta, Ref precRange) {
+    public static Set<Ref> findUpdateDepRef(Ref prec, Ref dep, EdgeMeta edgeMeta, Ref precRange) {
         Set<Ref> retSet = new HashSet<>();
         int row = -1;
         int col = -1;
@@ -215,13 +226,16 @@ public class PatternTools {
         }
 
         PatternType patternType;
-        if (edgeMeta.patternType != PatternType.TYPEZERO)
+        if (edgeMeta.patternType != PatternType.TYPEZERO) {
             patternType = edgeMeta.patternType;
-        else { // TYPEZERO
-            if (startRowOffset == 1 || startColOffset == 1) patternType = PatternType.TYPETHREE;
-            else if (startRowOffset == -1 || startColOffset == -1) patternType = PatternType.TYPETWO;
-            else throw new RuntimeException("TYPE ZERO offset (" + startRowOffset + ","
-                        + startColOffset + ") wrong");
+        } else { // TYPEZERO
+            if (startRowOffset == 1 || startColOffset == 1) {
+                patternType = PatternType.TYPETHREE;
+            } else if (startRowOffset == -1 || startColOffset == -1) {
+                patternType = PatternType.TYPETWO;
+            } else {
+                throw new RuntimeException("TYPE ZERO offset (" + startRowOffset + "," + startColOffset + ") wrong");
+            }
         }
 
         switch (patternType) {
@@ -239,13 +253,17 @@ public class PatternTools {
                 lastCol = inputLastCol + startColOffset;
                 if (patternType != PatternType.TYPEONE) {
                     int gapSize = patternType.ordinal() - PatternType.TYPEFIVE.ordinal() + 1;
-                    retSet = findRefSetForGapType(prec.getBookName(), prec.getSheetName(),
+                    retSet = findRefSetForGapType(
+                            prec.getBookName(),
+                            prec.getSheetName(),
                             Math.max(row, dep.getRow()),
                             Math.max(col, dep.getColumn()),
                             Math.min(lastRow, dep.getLastRow()),
                             Math.min(lastCol, dep.getLastColumn()),
-                            dep.getRow(), dep.getColumn(),
-                            dep.getLastRow(), dep.getLastColumn(),
+                            dep.getRow(),
+                            dep.getColumn(),
+                            dep.getLastRow(),
+                            dep.getLastColumn(),
                             gapSize);
                     return retSet;
                 }
@@ -265,8 +283,8 @@ public class PatternTools {
                 lastCol = dep.getLastColumn();
                 break;
 
-            default: //case TYPEFOUR: fixed start, fixed end
-                     //case NOTYPE
+            default: // case TYPEFOUR: fixed start, fixed end
+                     // case NOTYPE
                 row = dep.getRow();
                 col = dep.getColumn();
                 lastRow = dep.getLastRow();
@@ -279,39 +297,49 @@ public class PatternTools {
         Ref result = new RefImpl(
                 prec.getBookName(),
                 prec.getSheetName(),
-                row, col, lastRow, lastCol).getOverlap(dep);
+                row,
+                col,
+                lastRow,
+                lastCol).getOverlap(dep);
+
         retSet.add(result);
 
         return retSet;
     }
 
-    public static Set<Ref> findRefSetForGapType(String bookName,
-                                                String sheetName,
-                                                int iRow, int iCol,
-                                                int iLastRow, int iLastCol,
-                                                int row, int col,
-                                                int lastRow, int lastCol,
-                                                int gapSize) {
+    public static Set<Ref> findRefSetForGapType(
+            String bookName,
+            String sheetName,
+            int iRow, int iCol,
+            int iLastRow, int iLastCol,
+            int row, int col,
+            int lastRow, int lastCol,
+            int gapSize) {
         Set<Ref> refSet = new HashSet<>();
         if (row == lastRow) {
             for (int colVar = col; colVar <= lastCol; colVar += (gapSize + 1)) {
-                if (colVar >= iCol && colVar <= iLastCol)
+                if (colVar >= iCol && colVar <= iLastCol) {
                     refSet.add(new RefImpl(bookName, sheetName, row, colVar));
+                }
             }
         } else if (col == lastCol) {
             for (int rowVar = row; rowVar <= lastRow; rowVar += (gapSize + 1)) {
-                if (rowVar >= iRow && rowVar <= iLastRow)
+                if (rowVar >= iRow && rowVar <= iLastRow) {
                     refSet.add(new RefImpl(bookName, sheetName, rowVar, col));
+                }
             }
         } else {
-            assert(false);
+            assert (false);
         }
         return refSet;
     }
 
-    public static Ref findUpdatePrecRef(Ref prec, Ref dep,
-                                        EdgeMeta edgeMeta, Ref depRange,
-                                        boolean isDirectPrec) {
+    public static Ref findUpdatePrecRef(
+            Ref prec,
+            Ref dep,
+            EdgeMeta edgeMeta,
+            Ref depRange,
+            boolean isDirectPrec) {
         int row = -1;
         int col = -1;
         int lastRow = -1;
@@ -323,14 +351,18 @@ public class PatternTools {
         int endColOffset = edgeMeta.endOffset.getColOffset();
 
         PatternType patternType;
-        if (edgeMeta.patternType != PatternType.TYPEZERO)
+        if (edgeMeta.patternType != PatternType.TYPEZERO) {
             patternType = edgeMeta.patternType;
-        else { // TYPEZERO
-            if (isDirectPrec) patternType = PatternType.TYPEONE;
-            else if (startRowOffset == 1 || startColOffset == 1) patternType = PatternType.TYPETHREE;
-            else if (startRowOffset == -1 || startColOffset == -1) patternType = PatternType.TYPETWO;
-            else throw new RuntimeException("TYPE ZERO offset (" + startRowOffset + ","
-                        + startColOffset + ") wrong");
+        } else { // TYPEZERO
+            if (isDirectPrec) {
+                patternType = PatternType.TYPEONE;
+            } else if (startRowOffset == 1 || startColOffset == 1) {
+                patternType = PatternType.TYPETHREE;
+            } else if (startRowOffset == -1 || startColOffset == -1) {
+                patternType = PatternType.TYPETWO;
+            } else {
+                throw new RuntimeException("TYPE ZERO offset (" + startRowOffset + "," + startColOffset + ") wrong");
+            }
         }
 
         switch (patternType) {
@@ -368,7 +400,11 @@ public class PatternTools {
         Ref result = new RefImpl(
                 prec.getBookName(),
                 prec.getSheetName(),
-                row, col, lastRow, lastCol).getOverlap(prec);
+                row,
+                col,
+                lastRow,
+                lastCol).getOverlap(prec);
+
         return result;
     }
 
@@ -378,44 +414,61 @@ public class PatternTools {
             newRow = newLastRow = ref.getRow();
             newCol = findFirstMatch(ref.getColumn(), subRef.getColumn(), gapSize);
             newLastCol = findLastMatch(ref.getLastColumn(), subRef.getLastColumn(), gapSize);
-            if (newCol > newLastCol) newCol = -1;
+            if (newCol > newLastCol) {
+                newCol = -1;
+            }
         } else if (ref.getColumn() == ref.getLastColumn()) {
             newCol = newLastCol = ref.getColumn();
             newRow = findFirstMatch(ref.getRow(), subRef.getRow(), gapSize);
             newLastRow = findLastMatch(ref.getLastRow(), subRef.getLastRow(), gapSize);
-            if (newRow > newLastRow) newRow = -1;
+            if (newRow > newLastRow) {
+                newRow = -1;
+            }
         } else {
             assert false;
         }
         if (newRow == -1 || newCol == -1 || newLastRow == -1 || newLastCol == -1) {
             return null;
         } else {
-            return new RefImpl(ref.getBookName(), ref.getSheetName(),
-                    newRow, newCol, newLastRow, newLastCol);
+            return new RefImpl(
+                    ref.getBookName(),
+                    ref.getSheetName(),
+                    newRow,
+                    newCol,
+                    newLastRow,
+                    newLastCol);
         }
     }
 
     private static int findFirstMatch(int start, int subStart, int gapSize) {
-        int div = (subStart - start + gapSize - 1)/gapSize;
+        int div = (subStart - start + gapSize - 1) / gapSize;
         return start + div * gapSize;
     }
 
     private static int findLastMatch(int end, int subEnd, int gapSize) {
-        int div = (end - subEnd + gapSize - 1)/gapSize;
+        int div = (end - subEnd + gapSize - 1) / gapSize;
         return end - div * gapSize;
     }
 
-    public static Ref findLastPrec(Ref prec, Ref dep,
-                                   EdgeMeta edgeMeta,
-                                   Direction direction) {
-        assert(direction != Direction.NODIRECTION);
+    public static Ref findLastPrec(Ref prec, Ref dep, EdgeMeta edgeMeta, Direction direction) {
+        assert (direction != Direction.NODIRECTION);
         Ref depRange;
         if (direction == Direction.TOUP || direction == Direction.TOLEFT) {
-            depRange = new RefImpl(dep.getBookName(), dep.getSheetName(),
-                    dep.getRow(), dep.getColumn(), dep.getRow(), dep.getColumn());
+            depRange = new RefImpl(
+                    dep.getBookName(),
+                    dep.getSheetName(),
+                    dep.getRow(),
+                    dep.getColumn(),
+                    dep.getRow(),
+                    dep.getColumn());
         } else {
-            depRange = new RefImpl(dep.getBookName(), dep.getSheetName(),
-                    dep.getLastRow(), dep.getLastColumn(), dep.getLastRow(), dep.getLastColumn());
+            depRange = new RefImpl(
+                    dep.getBookName(),
+                    dep.getSheetName(),
+                    dep.getLastRow(),
+                    dep.getLastColumn(),
+                    dep.getLastRow(),
+                    dep.getLastColumn());
         }
         boolean isDirectPrec = true;
         return findUpdatePrecRef(prec, dep, edgeMeta, depRange, isDirectPrec);

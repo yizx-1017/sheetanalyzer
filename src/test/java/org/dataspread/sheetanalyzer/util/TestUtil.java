@@ -1,13 +1,12 @@
 package org.dataspread.sheetanalyzer.util;
 
-import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
-import org.dataspread.sheetanalyzer.util.Ref;
+import org.apache.poi.ss.usermodel.Row;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
+import java.io.File;
 
 public class TestUtil {
 
@@ -21,24 +20,28 @@ public class TestUtil {
         return file;
     }
 
-    public static File createXlsxTempFile () throws IOException {
+    public static File createXlsxTempFile() throws IOException {
         File file = File.createTempFile(prefix, xlsxSurfix);
         file.deleteOnExit();
         return file;
     }
 
-    public static boolean hasSameDependencies(HashMap<Ref, Set<Ref>> mapA,
-                                              HashMap<Ref, Set<Ref>> mapB) {
+    public static boolean hasSameDependencies(Map<Ref, Set<Ref>> mapA,
+            Map<Ref, Set<Ref>> mapB) {
         return containsMapAll(mapA, mapB) && containsMapAll(mapB, mapA);
     }
 
-    private static boolean containsMapAll(HashMap<Ref, Set<Ref>> mapA,
-                                          HashMap<Ref, Set<Ref>> mapB) {
-        for (Ref refB: mapB.keySet()) {
-            if (!mapA.containsKey(refB)) return false;
+    private static boolean containsMapAll(Map<Ref, Set<Ref>> mapA,
+            Map<Ref, Set<Ref>> mapB) {
+        for (Ref refB : mapB.keySet()) {
+            if (!mapA.containsKey(refB)) {
+                return false;
+            }
             Set<Ref> refSetA = mapA.get(refB);
             Set<Ref> refSetB = mapB.get(refB);
-            if (!hasSameRefs(refSetA, refSetB)) return false;
+            if (!hasSameRefs(refSetA, refSetB)) {
+                return false;
+            }
         }
 
         return true;
@@ -49,7 +52,7 @@ public class TestUtil {
     }
 
     public static void createAnEmptyRowWithTwoCols(Sheet sheet, int rowNum,
-                                                   int colA, int colB) {
+            int colA, int colB) {
         Row row = sheet.createRow(rowNum);
         row.createCell(colA);
         row.createCell(colB);

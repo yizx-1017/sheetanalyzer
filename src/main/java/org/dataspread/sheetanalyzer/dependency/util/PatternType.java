@@ -1,11 +1,11 @@
 package org.dataspread.sheetanalyzer.dependency.util;
 
 public enum PatternType {
-    TYPEZERO("RR-Chain"),  // Long chain, special case of TypeOne
-    TYPEONE("RR"),   // Relative start, Relative end
-    TYPETWO("RF"),   // Relative start, Absolute end
+    TYPEZERO("RR-Chain"), // Long chain, special case of TypeOne
+    TYPEONE("RR"), // Relative start, Relative end
+    TYPETWO("RF"), // Relative start, Absolute end
     TYPETHREE("FR"), // Absolute start, Relative end
-    TYPEFOUR("FF"),  // Absolute start, Absolute end
+    TYPEFOUR("FF"), // Absolute start, Absolute end
     TYPEFIVE("RRGapOne"),
     TYPESIX("RRGapTwo"),
     TYPESEVEN("RRGapThree"),
@@ -21,4 +21,3 @@ public enum PatternType {
         this.label = label;
     }
 }
-

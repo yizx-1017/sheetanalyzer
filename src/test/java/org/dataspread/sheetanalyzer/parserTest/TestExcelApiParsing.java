@@ -1,10 +1,10 @@
 package org.dataspread.sheetanalyzer.parserTest;
 
-import org.dataspread.sheetanalyzer.SheetAnalyzer;
-import org.dataspread.sheetanalyzer.util.Ref;
-import org.dataspread.sheetanalyzer.util.RefImpl;
 import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
+import org.dataspread.sheetanalyzer.SheetAnalyzer;
 import org.dataspread.sheetanalyzer.util.TestUtil;
+import org.dataspread.sheetanalyzer.util.RefImpl;
+import org.dataspread.sheetanalyzer.util.Ref;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -17,8 +17,7 @@ import java.util.Set;
 public class TestExcelApiParsing {
 
     private static SheetAnalyzer sheetAnalyzer;
-    private static final Map<String,
-            String[][]> spreadsheetContent = new HashMap<>();
+    private static final Map<String, String[][]> spreadsheetContent = new HashMap<>();
     private static final int maxRows = 1000;
     private static final int maxCols = 3;
 

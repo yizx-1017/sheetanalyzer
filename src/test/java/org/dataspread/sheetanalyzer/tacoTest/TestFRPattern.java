@@ -1,28 +1,28 @@
 package org.dataspread.sheetanalyzer.tacoTest;
 
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.dataspread.sheetanalyzer.SheetAnalyzer;
-import org.dataspread.sheetanalyzer.util.Ref;
-import org.dataspread.sheetanalyzer.util.RefImpl;
 import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
 import org.dataspread.sheetanalyzer.util.TestUtil;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.dataspread.sheetanalyzer.SheetAnalyzer;
+import org.dataspread.sheetanalyzer.util.RefImpl;
+import org.dataspread.sheetanalyzer.util.Ref;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.junit.jupiter.api.Assertions;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.io.File;
 
 public class TestFRPattern {
 
-  private static SheetAnalyzer sheetAnalyzer;
+    private static SheetAnalyzer sheetAnalyzer;
     private static final String sheetName = "FRSheet";
     private static final int maxRows = 1000;
 
@@ -35,7 +35,7 @@ public class TestFRPattern {
             Cell cellA = row.createCell(colA);
             Cell cellB = row.createCell(colB);
             Cell cellC = row.createCell(colC);
-            cellA.setCellValue(i+1);
+            cellA.setCellValue(i + 1);
             cellB.setCellValue(10);
             cellC.setCellFormula("SUM(A1:" + "B" + (i + 1) + ")");
         }

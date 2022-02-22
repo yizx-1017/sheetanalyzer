@@ -21,12 +21,12 @@ public interface Ref {
 
 	int getLastColumn();
 
-	//ZSS-815
-	//since 3.7.0
+	// ZSS-815
+	// since 3.7.0
 	int getSheetIndex();
-	
-	//ZSS-815
-	//since 3.7.0
+
+	// ZSS-815
+	// since 3.7.0
 	int getLastSheetIndex();
 
 	Set<Ref> getPrecedents();
@@ -34,7 +34,9 @@ public interface Ref {
 	Ref getBoundingBox(Ref target);
 
 	int getCellCount();
+
 	Ref getOverlap(Ref target);
+
 	Set<Ref> getNonOverlap(Ref target);
 
 	void addPrecedent(Ref precedent);
