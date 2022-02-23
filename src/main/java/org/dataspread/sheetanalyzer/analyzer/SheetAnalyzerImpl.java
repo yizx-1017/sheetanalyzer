@@ -1,5 +1,6 @@
 package org.dataspread.sheetanalyzer.analyzer;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
 import org.dataspread.sheetanalyzer.util.APINotImplementedException;
 import org.dataspread.sheetanalyzer.dependency.DependencyGraphTACO;
@@ -8,6 +9,7 @@ import org.dataspread.sheetanalyzer.dependency.DependencyGraph;
 import org.dataspread.sheetanalyzer.parser.SpreadsheetParser;
 import org.dataspread.sheetanalyzer.parser.POIParser;
 import org.dataspread.sheetanalyzer.SheetAnalyzer;
+import org.dataspread.sheetanalyzer.data.CellContent;
 import org.dataspread.sheetanalyzer.util.Pair;
 import org.dataspread.sheetanalyzer.util.Ref;
 
@@ -98,7 +100,22 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
      */
     @Override
     public Map<String, Map<String, List<Ref>>> getFormulaClusters() {
-        throw new ArrayIndexOutOfBoundsException();
+        Map<String, Map<String, List<Ref>>> formulaClusters = new HashMap<>();
+        this.parser.getSheetData().forEach((sheetName, sheetData) -> {
+            Map<String, List<Ref>> cluster = new HashMap<>();
+            sheetData.getDepSet().forEach(dep -> {
+                CellContent cellContent = sheetData.getCellContent(dep);
+                if (cellContent.isFormula()) {
+                    String formula = DigestUtils.md5Hex(cellContent.getFormula()).toUpperCase();
+                    if (!cluster.containsKey(formula)) {
+                        cluster.put(formula, new ArrayList<>());
+                    }
+                    cluster.get(formula).add(dep);
+                }
+            });
+            formulaClusters.put(sheetName, cluster);
+        });
+        return formulaClusters;
     }
 
     @Override
