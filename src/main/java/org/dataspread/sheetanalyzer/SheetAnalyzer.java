@@ -75,7 +75,8 @@ public abstract class SheetAnalyzer {
      *
      * @return
      */
-    public abstract Map<String, Map<Ref, List<RefWithMeta>>> getTACODepGraphs();
+    public abstract Map<String, Pair<Map<Ref, List<RefWithMeta>>,
+            Map<Ref, List<RefWithMeta>>>>  getTACODepGraphs();
 
     /**
      * Get the formula clusters
