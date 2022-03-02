@@ -24,8 +24,8 @@ public class DependencyGraphTACO implements DependencyGraph {
 
     private final CompressInfoComparator compressInfoComparator = new CompressInfoComparator();
 
-    public Map<Ref, List<RefWithMeta>> getCompressedGraph() {
-        return this.precToDepList;
+    public Pair<Map<Ref, List<RefWithMeta>>, Map<Ref, List<RefWithMeta>>> getCompressedGraph() {
+        return new Pair<>(this.precToDepList, this.depToPrecList);
     }
 
     public Set<Ref> getDependents(Ref precedent) {

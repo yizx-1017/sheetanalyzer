@@ -84,8 +84,9 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
     }
 
     @Override
-    public Map<String, Map<Ref, List<RefWithMeta>>> getTACODepGraphs() {
-        Map<String, Map<Ref, List<RefWithMeta>>> tacoDepGraphs = new HashMap<>();
+    public Map<String, Pair<Map<Ref, List<RefWithMeta>>,
+            Map<Ref, List<RefWithMeta>>>> getTACODepGraphs() {
+        Map<String, Pair<Map<Ref, List<RefWithMeta>>, Map<Ref, List<RefWithMeta>>>> tacoDepGraphs = new HashMap<>();
         this.depGraphMap.forEach((sheetName, depGraph) -> {
             tacoDepGraphs.put(sheetName,
                     ((DependencyGraphTACO) depGraph).getCompressedGraph());
