@@ -84,8 +84,7 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
     }
 
     @Override
-    public Map<String, Pair<Map<Ref, List<RefWithMeta>>,
-            Map<Ref, List<RefWithMeta>>>> getTACODepGraphs() {
+    public Map<String, Pair<Map<Ref, List<RefWithMeta>>, Map<Ref, List<RefWithMeta>>>> getTACODepGraphs() {
         Map<String, Pair<Map<Ref, List<RefWithMeta>>, Map<Ref, List<RefWithMeta>>>> tacoDepGraphs = new HashMap<>();
         this.depGraphMap.forEach((sheetName, depGraph) -> {
             tacoDepGraphs.put(sheetName,
@@ -109,7 +108,10 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
                 CellContent cellContent = sheetData.getCellContent(dep);
                 if (cellContent.isFormula()) {
                     String formula = DigestUtils.md5Hex(cellContent.getFormula()).toUpperCase();
-                    clusters.getOrDefault(formula, new ArrayList<>()).add(dep);
+                    if (!clusters.containsKey(formula)) {
+                        clusters.put(formula, new ArrayList<>());
+                    }
+                    clusters.get(formula).add(dep);
                 }
             });
             for (Map.Entry<String, List<Ref>> cluster : clusters.entrySet()) {
