@@ -27,12 +27,13 @@ public class TestClustering {
   private static File createTestSheet() throws IOException {
     try (Workbook workbook = new XSSFWorkbook()) {
       Sheet sheet = workbook.createSheet(sheetName);
-      int colA = 0, colB = 1, colC = 2;
+      int colA = 0, colB = 1, colC = 2, colD = 3;
       for (int i = 0; i < maxRows; i++) {
         Row row = sheet.createRow(i);
         row.createCell(colA).setCellValue(i + 1);
         row.createCell(colB).setCellValue(10);
         row.createCell(colC).setCellFormula("SUM(A1:" + "B" + maxRows + ")");
+        row.createCell(colD).setCellFormula("SUM(A1:" + "B" + maxRows + ")");
       }
       TestUtil.createAnEmptyRowWithTwoCols(sheet, maxRows, colA, colB);
       File xlsTempFile = TestUtil.createXlsTempFile();
@@ -51,6 +52,12 @@ public class TestClustering {
 
     Map<String, Map<String, List<Ref>>> mapping = sheetAnalyzer.getFormulaClusters();
 
+    Map<String, List<Ref>> sheet = mapping.get(TestClustering.sheetName);
+    List<Ref> cluster = sheet.get(sheet.keySet().iterator().next());
+    for (Ref r : cluster) {
+      System.out.println(r);
+    }
+
     // There should only be one sheet name in the mapping
     Assertions.assertEquals(mapping.keySet().size(), 1);
 
@@ -61,9 +68,9 @@ public class TestClustering {
     // cell reference
     Assertions.assertEquals(mapping.get(TestClustering.sheetName).keySet().size(), 1);
 
-    // The size of the cluster should equal the number of rows in the sheet
+    // The size of the cluster should equal 2 for column C and column D
     List<Ref> refs = mapping.get(TestClustering.sheetName).values().iterator().next();
-    Assertions.assertEquals(refs.size(), TestClustering.maxRows);
+    Assertions.assertEquals(2, refs.size());
 
   }
 
