@@ -1,6 +1,5 @@
 package org.dataspread.sheetanalyzer.analyzer;
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
 import org.dataspread.sheetanalyzer.util.APINotImplementedException;
 import org.dataspread.sheetanalyzer.dependency.DependencyGraphTACO;
@@ -107,11 +106,11 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
             sheetData.getDepSet().forEach(dep -> {
                 CellContent cellContent = sheetData.getCellContent(dep);
                 if (cellContent.isFormula()) {
-                    String formula = DigestUtils.md5Hex(cellContent.getFormula()).toUpperCase();
-                    if (!cluster.containsKey(formula)) {
-                        cluster.put(formula, new ArrayList<>());
+                    String formulaTemplate = cellContent.getFormulaTemplate();
+                    if (!cluster.containsKey(formulaTemplate)) {
+                        cluster.put(formulaTemplate, new ArrayList<>());
                     }
-                    cluster.get(formula).add(dep);
+                    cluster.get(formulaTemplate).add(dep);
                 }
             });
             formulaClusters.put(sheetName, cluster);
