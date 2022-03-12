@@ -115,13 +115,11 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
             Map<String, List<Ref>> cluster = new HashMap<>();
             sheetData.getDepSet().forEach(dep -> {
                 CellContent cellContent = sheetData.getCellContent(dep);
-                if (cellContent.isFormula()) {
-                    System.out.println("formula:" + cellContent.getFormula());
-                    String formula = DigestUtils.md5Hex(cellContent.getFormula()).toUpperCase();
-                    if (!cluster.containsKey(formula)) {
-                        cluster.put(formula, new ArrayList<>());
+                if (cellContent.isFormula()) {String formulaTemplate = cellContent.getFormulaTemplate();
+                    if (!cluster.containsKey(formulaTemplate)) {
+                        cluster.put(formulaTemplate, new ArrayList<>());
                     }
-                    cluster.get(formula).add(dep);
+                    cluster.get(formulaTemplate).add(dep);
                 }
             });
             formulaClusters.put(sheetName, cluster);

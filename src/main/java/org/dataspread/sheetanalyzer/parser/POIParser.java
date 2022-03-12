@@ -13,11 +13,8 @@ import org.dataspread.sheetanalyzer.util.*;
 import org.apache.poi.ss.formula.ptg.*;
 import org.apache.poi.ss.usermodel.*;
 
-import java.util.LinkedList;
+import java.util.*;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.io.File;
 
 public class POIParser implements SpreadsheetParser {
@@ -131,7 +128,8 @@ public class POIParser implements SpreadsheetParser {
                         parseOneFormulaCell(sheetData, cell);
                     } else {
                         Ref dep = new RefImpl(cell.getRowIndex(), cell.getColumnIndex());
-                        CellContent cellContent = new CellContent(getCellContentString(cell), "", false);
+                        CellContent cellContent = new CellContent(getCellContentString(cell), "",
+                                " ", false);
                         sheetData.addContent(dep, cellContent);
                     }
                 }
@@ -161,6 +159,26 @@ public class POIParser implements SpreadsheetParser {
         }
     }
 
+    private String extractFormulaTemplate(Ptg[] ptgs) {
+        StringBuilder cleanedFormula = new StringBuilder();
+        for (Ptg ptg : ptgs) {
+            if (ptg instanceof OperationPtg) {
+                // Include mathematical operators in the cleaned formula
+                OperationPtg tok = (OperationPtg) ptg;
+                String[] operands = new String[tok.getNumberOfOperands()];
+                Arrays.fill(operands, "");
+                cleanedFormula.append(tok.toFormulaString(operands));
+            } else if (ptg instanceof OperandPtg) {
+                // Only exclude the references in the cleaned formula
+                continue;
+            } else {
+                // Include ArrayPtg, UnknownPtg, and ControlPtg in the cleaned formula
+                cleanedFormula.append(ptg.toFormulaString());
+            }
+        }
+        return cleanedFormula.toString();
+    }
+
     private void parseOneFormulaCell(SheetData sheetData, Cell cell) throws SheetNotSupportedException {
         Ref dep = new RefImpl(cell.getRowIndex(), cell.getColumnIndex());
         Ptg[] tokens = this.getTokens(cell);
@@ -183,7 +201,9 @@ public class POIParser implements SpreadsheetParser {
             sheetData.addDeps(dep, precList);
         }
         sheetData.addFormulaNumRef(dep, numRefs);
-        CellContent cellContent = new CellContent("", cell.getCellFormula(), true);
+        String formulaTemplate = extractFormulaTemplate(tokens);
+        CellContent cellContent = new CellContent("", cell.getCellFormula(),
+                formulaTemplate, true);
         sheetData.addContent(dep, cellContent);
     }
 

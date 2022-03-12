@@ -32,7 +32,7 @@ public class TestClustering {
         Row row = sheet.createRow(i);
         row.createCell(colA).setCellValue(i + 1);
         row.createCell(colB).setCellValue(10);
-        row.createCell(colC).setCellFormula("SUM(A1:" + "B" + maxRows + ")");
+        row.createCell(colC).setCellFormula("SUM(A1:" + "B" + (i+1) + ")");
       }
       TestUtil.createAnEmptyRowWithTwoCols(sheet, maxRows, colA, colB);
       File xlsTempFile = TestUtil.createXlsTempFile();
