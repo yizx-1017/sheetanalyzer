@@ -7,6 +7,7 @@ import org.dataspread.sheetanalyzer.data.CellContent;
 import org.dataspread.sheetanalyzer.util.Pair;
 import org.dataspread.sheetanalyzer.util.Ref;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -168,6 +169,12 @@ public abstract class SheetAnalyzer {
      *
      * @return
      */
-    public abstract boolean isTabularSheet();
+    public abstract boolean isTabularSheet() throws IOException, SheetNotSupportedException;
 
+    /**
+     * Check whether this spreadsheet is a taco supported table
+     *
+     * @return
+     */
+    public abstract boolean isTACOSheet() throws SheetNotSupportedException;
 }

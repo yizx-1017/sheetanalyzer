@@ -1,6 +1,8 @@
 package org.dataspread.sheetanalyzer.analyzer;
 
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.poi.ss.usermodel.*;
+import org.dataspread.sheetanalyzer.dependency.util.PatternType;
 import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
 import org.dataspread.sheetanalyzer.util.APINotImplementedException;
 import org.dataspread.sheetanalyzer.dependency.DependencyGraphTACO;
@@ -13,8 +15,12 @@ import org.dataspread.sheetanalyzer.data.CellContent;
 import org.dataspread.sheetanalyzer.util.Pair;
 import org.dataspread.sheetanalyzer.util.Ref;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.*;
+
+import static java.lang.Integer.max;
 
 public class SheetAnalyzerImpl extends SheetAnalyzer {
 
@@ -22,8 +28,11 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
     private final SpreadsheetParser parser;
     private long numVertices = 0;
     private long numEdges = 0;
+    private String filePath;
+    private int firstRowNum, lastRowNum;
 
     public SheetAnalyzerImpl(String filePath) throws SheetNotSupportedException {
+        this.filePath = filePath;
         this.parser = new POIParser(filePath);
         genDepGraphFromSheetData(this.depGraphMap);
     }
@@ -107,6 +116,7 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
             sheetData.getDepSet().forEach(dep -> {
                 CellContent cellContent = sheetData.getCellContent(dep);
                 if (cellContent.isFormula()) {
+                    System.out.println("formula:" + cellContent.getFormula());
                     String formula = DigestUtils.md5Hex(cellContent.getFormula()).toUpperCase();
                     if (!cluster.containsKey(formula)) {
                         cluster.put(formula, new ArrayList<>());
@@ -195,8 +205,88 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
     }
 
     @Override
-    public boolean isTabularSheet() {
-        throw new APINotImplementedException();
+    public boolean isTabularSheet() throws SheetNotSupportedException {
+        File file = new File(filePath);
+        try (Workbook wb = WorkbookFactory.create(file)) {
+            for (int i = 0; i < wb.getNumberOfSheets(); i++) {
+                Sheet sheet = wb.getSheetAt(i);
+                this.firstRowNum = sheet.getFirstRowNum();
+                this.lastRowNum = sheet.getLastRowNum();
+                int rowIndex = -1, startCol = -1, endCol = -1;
+                for (Row row : sheet) {
+                    if (rowIndex != -1 && row.getRowNum() != rowIndex + 1) {
+                        return false;
+                    }
+                    rowIndex = row.getRowNum();
+                    int columnIndex = -1, minCol = -1, maxCol = -1;
+                    for (Cell cell : row) {
+                        if (cell.getCellType() != CellType.BLANK) {
+                            int col = cell.getColumnIndex();
+                            if (columnIndex != -1 && col != columnIndex + 1) {
+                                return false;
+                            }
+                            if (minCol == -1) {
+                                if (startCol != -1 && startCol != col) return false;
+                                startCol = minCol = col;
+                            }
+                            maxCol = max(col, maxCol);
+                            columnIndex = col;
+//                            System.out.println(cell.getRowIndex()+ " "+cell.getColumnIndex());
+                        }
+                    }
+                    if (endCol != -1 && endCol != maxCol) return false;
+                    endCol = maxCol;
+                }
+            }
+            return true;
+        } catch (IOException err) {
+            err.printStackTrace();
+            throw new SheetNotSupportedException("Could not load workbook " + this.filePath);
+        }
+    }
+
+    @Override
+    public boolean isTACOSheet() throws SheetNotSupportedException {
+        // column with taco pattern but doesn't have
+        if (this.isTabularSheet()) {
+            for (Map.Entry<String, DependencyGraph> entry: this.depGraphMap.entrySet()) {
+//                System.out.println("-----------------------------");
+                Map<Ref, List<RefWithMeta>> depToPrecList = entry.getValue().getCompressedGraph().second;
+                for (Map.Entry<Ref, List<RefWithMeta>> e : depToPrecList.entrySet()) {
+//                    System.out.println(e.getKey().toString());
+                    if (this.firstRowNum != e.getKey().getRow() ||
+                            this.lastRowNum != e.getKey().getLastRow()) {
+                        return false;
+                    }
+                    for (RefWithMeta r : e.getValue()) {
+//                        System.out.println(r.getEdgeMeta().patternType + " " + r.getEdgeMeta().startOffset + " " + r.getEdgeMeta().endOffset);
+//                        System.out.println(r.getRef().toString());
+                        if (r.getEdgeMeta().patternType != PatternType.TYPEONE &&
+                                r.getEdgeMeta().patternType != PatternType.TYPETWO &&
+                                r.getEdgeMeta().patternType != PatternType.TYPETHREE &&
+                                r.getEdgeMeta().patternType != PatternType.TYPEFOUR) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            for (Map.Entry<String, Map<String, List<Ref>>> e: this.getFormulaClusters().entrySet()) {
+                Map<String, List<Ref>> clusters = e.getValue();
+                for (Map.Entry<String, List<Ref>> cluster: clusters.entrySet()) {
+                    System.out.println("-----------------------------");
+                    System.out.println(cluster.getKey());
+                    System.out.println(cluster.getValue().toString());
+//                    for (Ref i : cluster.getValue()) {
+//                        System.out.println(i.getRow() + " " + i.getColumn());
+//                    }
+                }
+
+
+            }
+            System.out.println(this.getNumOfFormulae());
+            return true;
+        }
+        return false;
     }
 
 }

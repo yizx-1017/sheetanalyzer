@@ -32,10 +32,15 @@ public class POIParser implements SpreadsheetParser {
         this.filename = file.getName();
         try (Workbook wb = WorkbookFactory.create(file)) {
             this.workbook = wb;
+            System.out.println(this.workbook.toString());
             if (workbook instanceof HSSFWorkbook) {
                 this.evalbook = HSSFEvaluationWorkbook.create((HSSFWorkbook) workbook);
+                System.out.println("HSSF");
+                System.out.println(this.evalbook.toString());
             } else if (workbook instanceof XSSFWorkbook) {
                 this.evalbook = XSSFEvaluationWorkbook.create((XSSFWorkbook) workbook);
+                System.out.println("XSSF");
+                System.out.println(this.evalbook.toString());
             } else {
                 throw new SheetNotSupportedException();
             }

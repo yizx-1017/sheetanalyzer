@@ -1,9 +1,11 @@
 package org.dataspread.sheetanalyzer.dependency;
 
+import org.dataspread.sheetanalyzer.dependency.util.RefWithMeta;
 import org.dataspread.sheetanalyzer.util.Pair;
 import org.dataspread.sheetanalyzer.util.Ref;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface DependencyGraph {
@@ -20,4 +22,6 @@ public interface DependencyGraph {
   long getNumVertices();
 
   long getNumEdges();
+
+  Pair<Map<Ref, List<RefWithMeta>>, Map<Ref, List<RefWithMeta>>> getCompressedGraph();
 }
