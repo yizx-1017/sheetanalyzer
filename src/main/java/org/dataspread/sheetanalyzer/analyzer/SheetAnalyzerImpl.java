@@ -1,6 +1,5 @@
 package org.dataspread.sheetanalyzer.analyzer;
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
 import org.dataspread.sheetanalyzer.util.APINotImplementedException;
 import org.dataspread.sheetanalyzer.dependency.DependencyGraphTACO;
@@ -107,15 +106,17 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
             sheetData.getDepSet().forEach(dep -> {
                 CellContent cellContent = sheetData.getCellContent(dep);
                 if (cellContent.isFormula()) {
-                    String formula = DigestUtils.md5Hex(cellContent.getFormula()).toUpperCase();
-                    if (!clusters.containsKey(formula)) {
-                        clusters.put(formula, new ArrayList<>());
+                    String formulaTemplate = cellContent.getFormulaTemplate();
+                    if (!clusters.containsKey(formulaTemplate)) {
+                        clusters.put(formulaTemplate, new ArrayList<>());
                     }
-                    clusters.get(formula).add(dep);
+                    clusters.get(formulaTemplate).add(dep);
                 }
             });
             for (Map.Entry<String, List<Ref>> cluster : clusters.entrySet()) {
-                clusters.replace(cluster.getKey(), compressRefList(cluster.getValue()));
+                List<Ref> refs = cluster.getValue();
+                sortRefList(refs);
+                clusters.replace(cluster.getKey(), compressRefListByRow(compressRefListByColumn(refs)));
             }
             formulaClusters.put(sheetName, clusters);
         });
@@ -127,23 +128,54 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
      * For example, if we have a list with references C1:C3 and C4:C7, this will
      * return a list with a single entry C1:C7.
      */
-    private List<Ref> compressRefList(List<Ref> refs) {
-        sortRefList(refs);
-        int start = 0, end = 1;
+    private List<Ref> compressRefListByColumn(List<Ref> refs) {
         List<Ref> compressedRefs = new ArrayList<>();
-        while (end < refs.size()) {
-            boolean sameColumn = refs.get(start).getColumn() == refs.get(end).getColumn();
-            boolean incrementing = refs.get(end - 1).getLastRow() == refs.get(end).getRow() - 1;
-            if (!sameColumn || !incrementing) {
+        int start = 0, end = 1;
+        for (; end < refs.size(); end += 1) {
+            if (!isCompressableByColumn(refs, start, end)) {
                 addCompressedRef(compressedRefs, refs, start, end);
                 start = end;
             }
-            end += 1;
         }
-        if (start != end) {
-            addCompressedRef(compressedRefs, refs, start, end);
-        }
+        addCompressedRef(compressedRefs, refs, start, end);
         return compressedRefs;
+    }
+
+    /**
+     * Helper to compress a list of Refs based on row.
+     * For example, if we have a list with references C1:C3 and D1:D3, this will
+     * return a list with a single entry C1:D3.
+     */
+    private List<Ref> compressRefListByRow(List<Ref> refs) {
+        /* Compress by row, but only if row and lastRow match. */
+        List<Ref> compressedRefs = new ArrayList<>();
+        int start = 0, end = 1;
+        for (; end < refs.size(); end += 1) {
+            if (!isCompressableByRow(refs, start, end)) {
+                addCompressedRef(compressedRefs, refs, start, end);
+                start = end;
+            }
+        }
+        addCompressedRef(compressedRefs, refs, start, end);
+        return compressedRefs;
+    }
+
+    /**
+     * Determines if the refs from START to END - 1 are compressable column-wise.
+     */
+    private boolean isCompressableByColumn(List<Ref> refs, int start, int end) {
+        return refs.get(start).getColumn() == refs.get(end).getColumn()
+                && refs.get(start).getLastColumn() == refs.get(end).getLastColumn()
+                && refs.get(end - 1).getLastRow() == refs.get(end).getRow() - 1;
+    }
+
+    /**
+     * Determines if the refs from START to END - 1 are compressable row-wise.
+     */
+    private boolean isCompressableByRow(List<Ref> refs, int start, int end) {
+        return refs.get(start).getRow() == refs.get(end).getRow()
+                && refs.get(start).getLastRow() == refs.get(end).getLastRow()
+                && refs.get(end - 1).getLastColumn() == refs.get(end).getColumn() - 1;
     }
 
     /**
@@ -158,17 +190,20 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
      * Adds a compressed ref to compressedRefs based on the current ref.
      */
     private void addCompressedRef(List<Ref> compressedRefs, List<Ref> refs, int start, int end) {
-        int row = refs.get(start).getRow();
-        int diff = end - start - 1;
-        compressedRefs.add(copyRefNewLastRow(refs.get(start), row + diff));
+        if (start == end) {
+            return;
+        }
+        int endRow = refs.get(end - 1).getLastRow();
+        int endCol = refs.get(end - 1).getLastColumn();
+        compressedRefs.add(copyRefNewLastRow(refs.get(start), endRow, endCol));
     }
 
     /**
      * Return a copy of a Ref object but changes with a different last row field.
      */
-    private Ref copyRefNewLastRow(Ref ref, int lastRow) {
+    private Ref copyRefNewLastRow(Ref ref, int lastRow, int lastCol) {
         return new RefImpl(ref.getBookName(), ref.getSheetName(), ref.getLastSheetName(),
-                ref.getRow(), ref.getColumn(), lastRow, ref.getLastColumn());
+                ref.getRow(), ref.getColumn(), lastRow, lastCol);
     }
 
     @Override

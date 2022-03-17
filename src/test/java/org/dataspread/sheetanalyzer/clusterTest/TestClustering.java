@@ -27,13 +27,16 @@ public class TestClustering {
   private static File createTestSheet() throws IOException {
     try (Workbook workbook = new XSSFWorkbook()) {
       Sheet sheet = workbook.createSheet(sheetName);
-      int colA = 0, colB = 1, colC = 2, colD = 3;
+      int colA = 0, colB = 1, colC = 2, colD = 3, colE = 4;
       for (int i = 0; i < maxRows; i++) {
         Row row = sheet.createRow(i);
         row.createCell(colA).setCellValue(i + 1);
         row.createCell(colB).setCellValue(10);
-        row.createCell(colC).setCellFormula("SUM(A1:" + "B" + maxRows + ")");
-        row.createCell(colD).setCellFormula("SUM(A1:" + "B" + maxRows + ")");
+        row.createCell(colC).setCellFormula("SUM(A1:" + "B" + (i + 1) + ")");
+        row.createCell(colD).setCellFormula("SUM(A1:" + "C" + (i + 1) + ")");
+        if (i != maxRows - 1) {
+          row.createCell(colE).setCellFormula("SUM(A1:" + "D" + (i + 1) + ")");
+        }
       }
       TestUtil.createAnEmptyRowWithTwoCols(sheet, maxRows, colA, colB);
       File xlsTempFile = TestUtil.createXlsTempFile();
@@ -59,16 +62,18 @@ public class TestClustering {
     Assertions.assertTrue(mapping.containsKey(TestClustering.sheetName));
 
     // Number of hashes / clusters should be 1 since all formulae only differ by
-    // cell reference
+    // cell reference.
     Assertions.assertEquals(1, mapping.get(TestClustering.sheetName).keySet().size());
 
-    // The size of the cluster should equal 2 for column C and column D
+    // The size of the cluster should equal 2
     List<Ref> refs = mapping.get(TestClustering.sheetName).values().iterator().next();
     Assertions.assertEquals(2, refs.size());
 
-    // The cell count of the Refs in the clusters should be equal to maxRows
-    Assertions.assertEquals(maxRows, refs.get(0).getCellCount());
-    Assertions.assertEquals(maxRows, refs.get(1).getCellCount());
+    // Cell count of Refs in the first cluster should be equal to maxRows * 2
+    Assertions.assertEquals(maxRows * 2, refs.get(0).getCellCount());
+
+    // Cell count of Refs in the second cluster should be equal to maxRows - 1
+    Assertions.assertEquals(maxRows - 1, refs.get(1).getCellCount());
   }
 
 }
