@@ -11,6 +11,7 @@ import org.dataspread.sheetanalyzer.SheetAnalyzer;
 import org.dataspread.sheetanalyzer.data.CellContent;
 import org.dataspread.sheetanalyzer.util.Pair;
 import org.dataspread.sheetanalyzer.util.Ref;
+import org.dataspread.sheetanalyzer.util.RefImpl;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.*;
@@ -82,8 +83,7 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
     }
 
     @Override
-    public Map<String, Pair<Map<Ref, List<RefWithMeta>>,
-            Map<Ref, List<RefWithMeta>>>> getTACODepGraphs() {
+    public Map<String, Pair<Map<Ref, List<RefWithMeta>>, Map<Ref, List<RefWithMeta>>>> getTACODepGraphs() {
         Map<String, Pair<Map<Ref, List<RefWithMeta>>, Map<Ref, List<RefWithMeta>>>> tacoDepGraphs = new HashMap<>();
         this.depGraphMap.forEach((sheetName, depGraph) -> {
             tacoDepGraphs.put(sheetName,
@@ -102,20 +102,108 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
     public Map<String, Map<String, List<Ref>>> getFormulaClusters() {
         Map<String, Map<String, List<Ref>>> formulaClusters = new HashMap<>();
         this.parser.getSheetData().forEach((sheetName, sheetData) -> {
-            Map<String, List<Ref>> cluster = new HashMap<>();
+            Map<String, List<Ref>> clusters = new HashMap<>();
             sheetData.getDepSet().forEach(dep -> {
                 CellContent cellContent = sheetData.getCellContent(dep);
                 if (cellContent.isFormula()) {
                     String formulaTemplate = cellContent.getFormulaTemplate();
-                    if (!cluster.containsKey(formulaTemplate)) {
-                        cluster.put(formulaTemplate, new ArrayList<>());
+                    if (!clusters.containsKey(formulaTemplate)) {
+                        clusters.put(formulaTemplate, new ArrayList<>());
                     }
-                    cluster.get(formulaTemplate).add(dep);
+                    clusters.get(formulaTemplate).add(dep);
                 }
             });
-            formulaClusters.put(sheetName, cluster);
+            for (Map.Entry<String, List<Ref>> cluster : clusters.entrySet()) {
+                List<Ref> refs = cluster.getValue();
+                sortRefList(refs);
+                clusters.replace(cluster.getKey(), compressRefListByRow(compressRefListByColumn(refs)));
+            }
+            formulaClusters.put(sheetName, clusters);
         });
         return formulaClusters;
+    }
+
+    /**
+     * Helper to compress a list of Refs based on column.
+     * For example, if we have a list with references C1:C3 and C4:C7, this will
+     * return a list with a single entry C1:C7.
+     */
+    private List<Ref> compressRefListByColumn(List<Ref> refs) {
+        List<Ref> compressedRefs = new ArrayList<>();
+        int start = 0, end = 1;
+        for (; end < refs.size(); end += 1) {
+            if (!isCompressableByColumn(refs, start, end)) {
+                addCompressedRef(compressedRefs, refs, start, end);
+                start = end;
+            }
+        }
+        addCompressedRef(compressedRefs, refs, start, end);
+        return compressedRefs;
+    }
+
+    /**
+     * Helper to compress a list of Refs based on row.
+     * For example, if we have a list with references C1:C3 and D1:D3, this will
+     * return a list with a single entry C1:D3.
+     */
+    private List<Ref> compressRefListByRow(List<Ref> refs) {
+        /* Compress by row, but only if row and lastRow match. */
+        List<Ref> compressedRefs = new ArrayList<>();
+        int start = 0, end = 1;
+        for (; end < refs.size(); end += 1) {
+            if (!isCompressableByRow(refs, start, end)) {
+                addCompressedRef(compressedRefs, refs, start, end);
+                start = end;
+            }
+        }
+        addCompressedRef(compressedRefs, refs, start, end);
+        return compressedRefs;
+    }
+
+    /**
+     * Determines if the refs from START to END - 1 are compressable column-wise.
+     */
+    private boolean isCompressableByColumn(List<Ref> refs, int start, int end) {
+        return refs.get(start).getColumn() == refs.get(end).getColumn()
+                && refs.get(start).getLastColumn() == refs.get(end).getLastColumn()
+                && refs.get(end - 1).getLastRow() == refs.get(end).getRow() - 1;
+    }
+
+    /**
+     * Determines if the refs from START to END - 1 are compressable row-wise.
+     */
+    private boolean isCompressableByRow(List<Ref> refs, int start, int end) {
+        return refs.get(start).getRow() == refs.get(end).getRow()
+                && refs.get(start).getLastRow() == refs.get(end).getLastRow()
+                && refs.get(end - 1).getLastColumn() == refs.get(end).getColumn() - 1;
+    }
+
+    /**
+     * Sorts a list of Refs by row, then by column.
+     */
+    private void sortRefList(List<Ref> refs) {
+        refs.sort((Ref ref1, Ref ref2) -> ref1.getRow() - ref2.getRow());
+        refs.sort((Ref ref1, Ref ref2) -> ref1.getColumn() - ref2.getColumn());
+    }
+
+    /**
+     * Adds a compressed ref to compressedRefs based on the current ref.
+     */
+    private void addCompressedRef(List<Ref> compressedRefs, List<Ref> refs, int start, int end) {
+        if (start == end) {
+            return;
+        }
+        int endRow = refs.get(end - 1).getLastRow();
+        int endCol = refs.get(end - 1).getLastColumn();
+        compressedRefs.add(copyRefNewLastRow(refs.get(start), endRow, endCol));
+    }
+
+    /**
+     * Return a copy of a Ref object but changes with a different last row field.
+     */
+    private Ref copyRefNewLastRow(Ref ref, int lastRow, int lastCol) {
+        return new RefImpl(ref.getBookName(), ref.getSheetName(), ref.getLastSheetName(),
+                ref.getRow(), ref.getColumn(), lastRow, lastCol);
     }
 
     @Override
