@@ -172,9 +172,18 @@ public abstract class SheetAnalyzer {
     public abstract boolean isTabularSheet() throws IOException, SheetNotSupportedException;
 
     /**
-     * Check whether this spreadsheet is a taco supported table
+     * Check whether this spreadsheet is a taco supported table i.e. the column has either all data or all formula
      *
      * @return
      */
     public abstract boolean isTACOSheet() throws SheetNotSupportedException;
+
+    /**
+     * Check whether this spreadsheet is a taco supported table with same formula pattern
+     * i.e. the column has either all data or all formula with same pattern
+     * other than that, we can mark this column's pattern as RR, RF, FR, or FF
+     *
+     * @return
+     */
+    public abstract boolean isTACOSheetWithSameFormulaPattern() throws SheetNotSupportedException;
 }

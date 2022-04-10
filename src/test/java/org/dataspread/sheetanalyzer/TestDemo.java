@@ -22,7 +22,7 @@ class TestDemo {
         String filePath = "/Users/eve/Desktop/S/6/Project/experiment/demo_excel.xlsx";
         SheetAnalyzer sheetAnalyzer = SheetAnalyzer.createSheetAnalyzer(filePath);
         System.out.println(sheetAnalyzer.isTabularSheet());
-        System.out.println(sheetAnalyzer.isTACOSheet());
+        System.out.println(sheetAnalyzer.isTACOSheetWithSameFormulaPattern());
     }
 }
 

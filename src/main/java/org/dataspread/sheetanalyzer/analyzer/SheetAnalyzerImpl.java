@@ -1,7 +1,7 @@
 package org.dataspread.sheetanalyzer.analyzer;
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.poi.ss.usermodel.*;
+import org.dataspread.sheetanalyzer.data.SheetData;
 import org.dataspread.sheetanalyzer.dependency.util.PatternType;
 import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
 import org.dataspread.sheetanalyzer.util.APINotImplementedException;
@@ -30,6 +30,7 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
     private long numEdges = 0;
     private String filePath;
     private int firstRowNum, lastRowNum;
+    boolean isTACOSheet;
 
     public SheetAnalyzerImpl(String filePath) throws SheetNotSupportedException {
         this.filePath = filePath;
@@ -211,6 +212,8 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
                 this.firstRowNum = sheet.getFirstRowNum();
                 this.lastRowNum = sheet.getLastRowNum();
                 int rowIndex = -1, startCol = -1, endCol = -1;
+                Map<Integer, Boolean> isFormulaColumn = new HashMap<>();
+                this.isTACOSheet = true;
                 for (Row row : sheet) {
                     if (rowIndex != -1 && row.getRowNum() != rowIndex + 1) {
                         return false;
@@ -230,6 +233,12 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
                             maxCol = max(col, maxCol);
                             columnIndex = col;
 //                            System.out.println(cell.getRowIndex()+ " "+cell.getColumnIndex());
+                            boolean isFormula = (cell.getCellType() == CellType.FORMULA);
+                            if(isFormulaColumn.get(col) == null) {
+                                isFormulaColumn.put(col, isFormula);
+                            } else if (isFormulaColumn.get(col) != isFormula) {
+                                this.isTACOSheet = false;
+                            }
                         }
                     }
                     if (endCol != -1 && endCol != maxCol) return false;
@@ -245,43 +254,58 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
 
     @Override
     public boolean isTACOSheet() throws SheetNotSupportedException {
-        // column with taco pattern but doesn't have
-        if (this.isTabularSheet()) {
+        if (!isTabularSheet()) this.isTACOSheet = false;
+        return isTACOSheet;
+    }
+
+    @Override
+    public boolean isTACOSheetWithSameFormulaPattern() throws SheetNotSupportedException {
+        if (isTACOSheet()) {
+            for (Map.Entry<String, SheetData> sheetEntry: this.parser.getSheetData().entrySet()) {
+                SheetData sheetData = sheetEntry.getValue();
+                Map<Integer, String> colTemplate = new HashMap<>();
+                for (Ref dep: sheetData.getDepSet()) {
+                    CellContent cellContent = sheetData.getCellContent(dep);
+                    int col = dep.getColumn();
+//                    System.out.println(dep.getRow() +" " +col);
+                    if (cellContent.isFormula()) {
+                        String formulaTemplate = cellContent.getFormulaTemplate();
+                        if (!colTemplate.containsKey(col)) {
+                            colTemplate.put(col, formulaTemplate);
+                        } else if (!Objects.equals(colTemplate.get(col), formulaTemplate)) {
+                            return false;
+                        }
+                    } else {
+                        if (!colTemplate.containsKey(col)) {
+                            colTemplate.put(col, "N/A");
+                        } else if (!Objects.equals(colTemplate.get(col), "N/A")) {
+                            return false;
+                        }
+                    }
+                }
+//                System.out.println(colTemplate);
+            }
             for (Map.Entry<String, DependencyGraph> entry: this.depGraphMap.entrySet()) {
 //                System.out.println("-----------------------------");
                 Map<Ref, List<RefWithMeta>> depToPrecList = entry.getValue().getCompressedGraph().second;
                 for (Map.Entry<Ref, List<RefWithMeta>> e : depToPrecList.entrySet()) {
 //                    System.out.println(e.getKey().toString());
                     if (this.firstRowNum != e.getKey().getRow() ||
-                            this.lastRowNum != e.getKey().getLastRow()) {
+                        this.lastRowNum != e.getKey().getLastRow()) {
                         return false;
                     }
                     for (RefWithMeta r : e.getValue()) {
-//                        System.out.println(r.getEdgeMeta().patternType + " " + r.getEdgeMeta().startOffset + " " + r.getEdgeMeta().endOffset);
-//                        System.out.println(r.getRef().toString());
-                        if (r.getEdgeMeta().patternType != PatternType.TYPEONE &&
-                                r.getEdgeMeta().patternType != PatternType.TYPETWO &&
-                                r.getEdgeMeta().patternType != PatternType.TYPETHREE &&
-                                r.getEdgeMeta().patternType != PatternType.TYPEFOUR) {
+                        PatternType p = r.getEdgeMeta().patternType;
+                        if (p != PatternType.TYPEONE &&
+                            p != PatternType.TYPETWO &&
+                            p != PatternType.TYPETHREE &&
+                            p != PatternType.TYPEFOUR) {
+                            // the column doesn't belong to the four type that we want
                             return false;
                         }
                     }
                 }
             }
-            for (Map.Entry<String, Map<String, List<Ref>>> e: this.getFormulaClusters().entrySet()) {
-                Map<String, List<Ref>> clusters = e.getValue();
-                for (Map.Entry<String, List<Ref>> cluster: clusters.entrySet()) {
-                    System.out.println("-----------------------------");
-                    System.out.println(cluster.getKey());
-                    System.out.println(cluster.getValue().toString());
-//                    for (Ref i : cluster.getValue()) {
-//                        System.out.println(i.getRow() + " " + i.getColumn());
-//                    }
-                }
-
-
-            }
-            System.out.println(this.getNumOfFormulae());
             return true;
         }
         return false;
