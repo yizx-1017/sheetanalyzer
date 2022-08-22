@@ -1,5 +1,6 @@
 package org.dataspread.sheetanalyzer;
 
+import org.dataspread.sheetanalyzer.parser.Node;
 import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
 import org.dataspread.sheetanalyzer.dependency.util.RefWithMeta;
 import org.dataspread.sheetanalyzer.analyzer.SheetAnalyzerImpl;
@@ -43,6 +44,11 @@ public abstract class SheetAnalyzer {
      * @return fileName
      */
     public abstract String getFileName();
+
+    /**
+     * @return TreeNode root
+     */
+    public abstract Node getFormulaTree();
 
     /**
      * @return a set of sheetnames

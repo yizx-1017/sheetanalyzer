@@ -3,6 +3,7 @@ package org.dataspread.sheetanalyzer.analyzer;
 import org.apache.poi.ss.usermodel.*;
 import org.dataspread.sheetanalyzer.data.SheetData;
 import org.dataspread.sheetanalyzer.dependency.util.PatternType;
+import org.dataspread.sheetanalyzer.parser.Node;
 import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
 import org.dataspread.sheetanalyzer.util.APINotImplementedException;
 import org.dataspread.sheetanalyzer.dependency.DependencyGraphTACO;
@@ -70,6 +71,10 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
     }
 
     @Override
+    public Node getFormulaTree() {
+        return this.parser.getFormulaTree();
+    }
+    @Override
     public Set<String> getSheetNames() {
         return this.depGraphMap.keySet();
     }
@@ -112,25 +117,25 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
     @Override
     public Map<String, Map<String, List<Ref>>> getFormulaClusters() {
         Map<String, Map<String, List<Ref>>> formulaClusters = new HashMap<>();
-        this.parser.getSheetData().forEach((sheetName, sheetData) -> {
-            Map<String, List<Ref>> clusters = new HashMap<>();
-            sheetData.getDepSet().forEach(dep -> {
-                CellContent cellContent = sheetData.getCellContent(dep);
-                if (cellContent.isFormula()) {
-                    String formulaTemplate = cellContent.getFormulaTemplate();
-                    if (!clusters.containsKey(formulaTemplate)) {
-                        clusters.put(formulaTemplate, new ArrayList<>());
-                    }
-                    clusters.get(formulaTemplate).add(dep);
-                }
-            });
-            for (Map.Entry<String, List<Ref>> cluster : clusters.entrySet()) {
-                List<Ref> refs = cluster.getValue();
-                sortRefList(refs);
-                clusters.replace(cluster.getKey(), compressRefListByRow(compressRefListByColumn(refs)));
-            }
-            formulaClusters.put(sheetName, clusters);
-        });
+//        this.parser.getSheetData().forEach((sheetName, sheetData) -> {
+//            Map<String, List<Ref>> clusters = new HashMap<>();
+//            sheetData.getDepSet().forEach(dep -> {
+//                CellContent cellContent = sheetData.getCellContent(dep);
+//                if (cellContent.isFormula()) {
+//                    String formulaTemplate = cellContent.getFormulaTemplate();
+//                    if (!clusters.containsKey(formulaTemplate)) {
+//                        clusters.put(formulaTemplate, new ArrayList<>());
+//                    }
+//                    clusters.get(formulaTemplate).add(dep);
+//                }
+//            });
+//            for (Map.Entry<String, List<Ref>> cluster : clusters.entrySet()) {
+//                List<Ref> refs = cluster.getValue();
+//                sortRefList(refs);
+//                clusters.replace(cluster.getKey(), compressRefListByRow(compressRefListByColumn(refs)));
+//            }
+//            formulaClusters.put(sheetName, clusters);
+//        });
         return formulaClusters;
     }
 
@@ -295,6 +300,21 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
     @Override
     public boolean isTabularSheet() throws SheetNotSupportedException {
         File file = new File(filePath);
+        for (Map.Entry<String, DependencyGraph> entry: this.depGraphMap.entrySet()) {
+                System.out.println("-----------------------------");
+            Map<Ref, List<RefWithMeta>> depToPrecList = entry.getValue().getCompressedGraph().second;
+            for (Map.Entry<Ref, List<RefWithMeta>> e : depToPrecList.entrySet()) {
+                System.out.println(e.getKey().toString());
+                for (RefWithMeta r : e.getValue()) {
+                    System.out.println(r.getEdgeMeta().startOffset.getColOffset()+" "+r.getEdgeMeta().startOffset.getRowOffset());
+                    System.out.println(r.getEdgeMeta().endOffset.getColOffset()+" "+r.getEdgeMeta().endOffset.getRowOffset());
+                    System.out.println(r.getRef());
+                    System.out.println(r.getPatternType());
+                    PatternType p = r.getEdgeMeta().patternType;
+                    System.out.println(p);
+                }
+            }
+        }
         try (Workbook wb = WorkbookFactory.create(file)) {
             for (int i = 0; i < wb.getNumberOfSheets(); i++) {
                 Sheet sheet = wb.getSheetAt(i);
@@ -349,54 +369,54 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
 
     @Override
     public boolean isTACOSheetWithSameFormulaPattern() throws SheetNotSupportedException {
-        if (isTACOSheet()) {
-            for (Map.Entry<String, SheetData> sheetEntry: this.parser.getSheetData().entrySet()) {
-                SheetData sheetData = sheetEntry.getValue();
-                Map<Integer, String> colTemplate = new HashMap<>();
-                for (Ref dep: sheetData.getDepSet()) {
-                    CellContent cellContent = sheetData.getCellContent(dep);
-                    int col = dep.getColumn();
-//                    System.out.println(dep.getRow() +" " +col);
-                    if (cellContent.isFormula()) {
-                        String formulaTemplate = cellContent.getFormulaTemplate();
-                        if (!colTemplate.containsKey(col)) {
-                            colTemplate.put(col, formulaTemplate);
-                        } else if (!Objects.equals(colTemplate.get(col), formulaTemplate)) {
-                            return false;
-                        }
-                    } else {
-                        if (!colTemplate.containsKey(col)) {
-                            colTemplate.put(col, "N/A");
-                        } else if (!Objects.equals(colTemplate.get(col), "N/A")) {
-                            return false;
-                        }
-                    }
-                }
+//        if (isTACOSheet()) {
+//            for (Map.Entry<String, SheetData> sheetEntry: this.parser.getSheetData().entrySet()) {
+//                SheetData sheetData = sheetEntry.getValue();
+//                Map<Integer, String> colTemplate = new HashMap<>();
+//                for (Ref dep: sheetData.getDepSet()) {
+//                    CellContent cellContent = sheetData.getCellContent(dep);
+//                    int col = dep.getColumn();
+////                    System.out.println(dep.getRow() +" " +col);
+//                    if (cellContent.isFormula()) {
+//                        String formulaTemplate = cellContent.getFormulaTemplate();
+//                        if (!colTemplate.containsKey(col)) {
+//                            colTemplate.put(col, formulaTemplate);
+//                        } else if (!Objects.equals(colTemplate.get(col), formulaTemplate)) {
+//                            return false;
+//                        }
+//                    } else {
+//                        if (!colTemplate.containsKey(col)) {
+//                            colTemplate.put(col, "N/A");
+//                        } else if (!Objects.equals(colTemplate.get(col), "N/A")) {
+//                            return false;
+//                        }
+//                    }
+//                }
 //                System.out.println(colTemplate);
-            }
-            for (Map.Entry<String, DependencyGraph> entry: this.depGraphMap.entrySet()) {
-//                System.out.println("-----------------------------");
-                Map<Ref, List<RefWithMeta>> depToPrecList = entry.getValue().getCompressedGraph().second;
-                for (Map.Entry<Ref, List<RefWithMeta>> e : depToPrecList.entrySet()) {
-//                    System.out.println(e.getKey().toString());
-                    if (this.firstRowNum != e.getKey().getRow() ||
-                        this.lastRowNum != e.getKey().getLastRow()) {
-                        return false;
-                    }
-                    for (RefWithMeta r : e.getValue()) {
-                        PatternType p = r.getEdgeMeta().patternType;
-                        if (p != PatternType.TYPEONE &&
-                            p != PatternType.TYPETWO &&
-                            p != PatternType.TYPETHREE &&
-                            p != PatternType.TYPEFOUR) {
-                            // the column doesn't belong to the four type that we want
-                            return false;
-                        }
-                    }
-                }
-            }
-            return true;
-        }
+//            }
+//            for (Map.Entry<String, DependencyGraph> entry: this.depGraphMap.entrySet()) {
+////                System.out.println("-----------------------------");
+//                Map<Ref, List<RefWithMeta>> depToPrecList = entry.getValue().getCompressedGraph().second;
+//                for (Map.Entry<Ref, List<RefWithMeta>> e : depToPrecList.entrySet()) {
+////                    System.out.println(e.getKey().toString());
+//                    if (this.firstRowNum != e.getKey().getRow() ||
+//                        this.lastRowNum != e.getKey().getLastRow()) {
+//                        return false;
+//                    }
+//                    for (RefWithMeta r : e.getValue()) {
+//                        PatternType p = r.getEdgeMeta().patternType;
+//                        if (p != PatternType.TYPEONE &&
+//                            p != PatternType.TYPETWO &&
+//                            p != PatternType.TYPETHREE &&
+//                            p != PatternType.TYPEFOUR) {
+//                            // the column doesn't belong to the four type that we want
+//                            return false;
+//                        }
+//                    }
+//                }
+//            }
+//            return true;
+//        }
         return false;
     }
 

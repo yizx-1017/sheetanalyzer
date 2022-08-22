@@ -23,21 +23,17 @@ public class POIParser implements SpreadsheetParser {
     private final FormulaParsingWorkbook evalbook;
     private Workbook workbook;
     private String filename;
+    private Node root;
 
     public POIParser(String filePath) throws SheetNotSupportedException {
         File file = new File(filePath);
         this.filename = file.getName();
         try (Workbook wb = WorkbookFactory.create(file)) {
             this.workbook = wb;
-            System.out.println(this.workbook.toString());
             if (workbook instanceof HSSFWorkbook) {
                 this.evalbook = HSSFEvaluationWorkbook.create((HSSFWorkbook) workbook);
-                System.out.println("HSSF");
-                System.out.println(this.evalbook.toString());
             } else if (workbook instanceof XSSFWorkbook) {
                 this.evalbook = XSSFEvaluationWorkbook.create((XSSFWorkbook) workbook);
-                System.out.println("XSSF");
-                System.out.println(this.evalbook.toString());
             } else {
                 throw new SheetNotSupportedException();
             }
@@ -61,6 +57,8 @@ public class POIParser implements SpreadsheetParser {
             throw new SheetNotSupportedException("Parsing formulae failed");
         }
     }
+
+    public Node getFormulaTree() {return this.root; }
 
     public String getFileName() {
         return this.filename;
@@ -113,7 +111,7 @@ public class POIParser implements SpreadsheetParser {
     private void parseSpreadsheet() throws SheetNotSupportedException {
         for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
             SheetData sheetData = parseOneSheet(workbook.getSheetAt(i));
-            this.sheetDataMap.put(workbook.getSheetAt(i).getSheetName().replace(',', '-'), sheetData);
+//            this.sheetDataMap.put(workbook.getSheetAt(i).getSheetName().replace(',', '-'), sheetData);
         }
     }
 
@@ -179,81 +177,163 @@ public class POIParser implements SpreadsheetParser {
         return cleanedFormula.toString();
     }
 
+    private Node buildFormulaTree(Ptg[] ptgs) {
+        Stack<Node> stack = new Stack<>();
+
+        for (Ptg token : ptgs) {
+            if (token instanceof OperationPtg) {
+                String val;
+                if (token instanceof AddPtg) {
+                    val = "+";
+                } else if (token instanceof SubtractPtg) {
+                    val = "-";
+                } else if (token instanceof MultiplyPtg) {
+                    val = "*";
+                } else if (token instanceof DividePtg) {
+                    val = "/";
+                } else {
+                    val = token.toFormulaString();
+                }
+                OperationPtg tok = (OperationPtg) token;
+                int num = tok.getNumberOfOperands();
+                List<Node> children = new ArrayList<>(num);
+                for (int i = 0; i < num; i++) {
+                    children.add(stack.pop());
+                }
+                Collections.reverse(children);
+                Node node = new OperatorNode(val, children);
+                stack.push(node);
+            } else if (token instanceof OperandPtg) {
+                if (token instanceof Area2DPtgBase) {
+                    Area2DPtgBase ptg = (Area2DPtgBase) token;
+                    int rowStart = ptg.getFirstRow();
+                    int colStart = ptg.getFirstColumn();
+                    int rowEnd = ptg.getLastRow();
+                    int colEnd = ptg.getLastColumn();
+                    boolean startRelative = ptg.isFirstRowRelative();
+                    boolean endRelative = ptg.isLastRowRelative();
+                    Node node = new RefNode(rowStart, colStart, rowEnd, colEnd, startRelative, endRelative);
+                    stack.push(node);
+                } else if (token instanceof RefPtg) {
+                    RefPtg ptg = (RefPtg) token;
+                    int row = ptg.getRow();
+                    int col = ptg.getColumn();
+                    boolean relative = ptg.isRowRelative();
+                    Node node = new RefNode(row, col, row, col, relative, relative);
+                    stack.push(node);
+                } else if (token instanceof Area3DPtg ||
+                        token instanceof Area3DPxg ||
+                        token instanceof Ref3DPtg ||
+                        token instanceof Ref3DPxg) {
+                    // Not supported
+                }
+            } else if (token instanceof ScalarConstantPtg) {
+                // Literal Value
+                double value;
+                if (token instanceof IntPtg) {
+                    IntPtg ptg = (IntPtg) token;
+                    value = ptg.getValue();
+                    LiteralNode node = new LiteralNode(value);
+                    stack.push(node);
+                } else if (token instanceof NumberPtg) {
+                    NumberPtg ptg = (NumberPtg) token;
+                    value = ptg.getValue();
+                    LiteralNode node = new LiteralNode(value);
+                    stack.push(node);
+                }
+            }
+            else {
+                // ArrayPtg, UnknownPtg, and ControlPtg
+                if (token instanceof AttrPtg && ((AttrPtg) token).isSum()) {
+                    // special treatment for SUM
+                    List<Node> children = new ArrayList<>(1);
+                    children.add(stack.pop());
+                    Collections.reverse(children);
+                    Node node = new OperatorNode("SUM", children);
+                    stack.push(node);
+                }
+            }
+        }
+
+        return stack.pop();
+    }
+
     private void parseOneFormulaCell(SheetData sheetData, Cell cell) throws SheetNotSupportedException {
-        Ref dep = new RefImpl(cell.getRowIndex(), cell.getColumnIndex());
         Ptg[] tokens = this.getTokens(cell);
-        List<Ref> precList = new LinkedList<>();
-        int numRefs = 0;
-        if (tokens != null) {
-            for (Ptg token : tokens) {
-                if (token instanceof OperandPtg) {
-                    Ref prec = parseOneToken(cell, (OperandPtg) token,
-                            sheetData);
-                    if (prec != null) {
-                        numRefs += 1;
-                        precList.add(prec);
-                    }
-                }
-            }
-        }
-
-        if (!precList.isEmpty()) {
-            sheetData.addDeps(dep, precList);
-        }
-        sheetData.addFormulaNumRef(dep, numRefs);
-        String formulaTemplate = extractFormulaTemplate(tokens);
-        CellContent cellContent = new CellContent("", cell.getCellFormula(),
-                formulaTemplate, true);
-        sheetData.addContent(dep, cellContent);
+        this.root = buildFormulaTree(tokens);
+//        Ref dep = new RefImpl(cell.getRowIndex(), cell.getColumnIndex());
+//        List<Ref> precList = new LinkedList<>();
+//        int numRefs = 0;
+//        if (tokens != null) {
+//            for (Ptg token : tokens) {
+//                if (token instanceof OperandPtg) {
+//                    Ref prec = parseOneToken(cell, (OperandPtg) token,
+//                            sheetData);
+//                    if (prec != null) {
+//                        numRefs += 1;
+//                        precList.add(prec);
+//                    }
+//                }
+//            }
+//        }
+//
+//        if (!precList.isEmpty()) {
+//            sheetData.addDeps(dep, precList);
+//        }
+//        sheetData.addFormulaNumRef(dep, numRefs);
+//        String formulaTemplate = extractFormulaTemplate(tokens);
+//        CellContent cellContent = new CellContent("", cell.getCellFormula(),
+//                formulaTemplate, true);
+//        sheetData.addContent(dep, cellContent);
     }
 
-    private Ref parseOneToken(Cell cell, OperandPtg token,
-            SheetData sheetData) throws SheetNotSupportedException {
-        Sheet sheet = this.getDependentSheet(cell, token);
-        if (sheet != null) {
-            if (token instanceof Area2DPtgBase) {
-                Area2DPtgBase ptg = (Area2DPtgBase) token;
-                int rowStart = ptg.getFirstRow();
-                int colStart = ptg.getFirstColumn();
-                int rowEnd = ptg.getLastRow();
-                int colEnd = ptg.getLastColumn();
-                Ref areaRef = new RefImpl(rowStart, colStart, rowEnd, colEnd);
-                if (!sheetData.areaAccessed(areaRef)) {
-                    sheetData.addOneAccess(areaRef);
-                    for (int r = ptg.getFirstRow(); r <= ptg.getLastRow(); r++) {
-                        for (int c = ptg.getFirstColumn(); c <= ptg.getLastColumn(); c++) {
-                            Cell dep = this.getCellAt(sheet, r, c);
-                            if (dep == null) {
-                                Ref cellRef = new RefImpl(r, c);
-                                if (sheetData.getCellContent(cellRef) == null) {
-                                    sheetData.addContent(cellRef,
-                                            CellContent.getNullCellContent());
-                                }
-                            }
-                        }
-                    }
-                }
-                return areaRef;
-            } else if (token instanceof RefPtg) {
-                RefPtg ptg = (RefPtg) token;
-                int row = ptg.getRow();
-                int col = ptg.getColumn();
-                Cell dep = this.getCellAt(sheet, row, col);
-                if (dep == null) {
-                    sheetData.addContent(new RefImpl(row, col),
-                            CellContent.getNullCellContent());
-                }
-                return new RefImpl(row, col, row, col);
-            } else if (token instanceof Area3DPtg ||
-                    token instanceof Area3DPxg ||
-                    token instanceof Ref3DPtg ||
-                    token instanceof Ref3DPxg) {
-                throw new SheetNotSupportedException();
-            }
-        }
-
-        return null;
-    }
+//    private Ref parseOneToken(Cell cell, OperandPtg token,
+//            SheetData sheetData) throws SheetNotSupportedException {
+//        Sheet sheet = this.getDependentSheet(cell, token);
+//        if (sheet != null) {
+//            if (token instanceof Area2DPtgBase) {
+//                Area2DPtgBase ptg = (Area2DPtgBase) token;
+//                int rowStart = ptg.getFirstRow();
+//                int colStart = ptg.getFirstColumn();
+//                int rowEnd = ptg.getLastRow();
+//                int colEnd = ptg.getLastColumn();
+//                Ref areaRef = new RefImpl(rowStart, colStart, rowEnd, colEnd);
+//                if (!sheetData.areaAccessed(areaRef)) {
+//                    sheetData.addOneAccess(areaRef);
+//                    for (int r = ptg.getFirstRow(); r <= ptg.getLastRow(); r++) {
+//                        for (int c = ptg.getFirstColumn(); c <= ptg.getLastColumn(); c++) {
+//                            Cell dep = this.getCellAt(sheet, r, c);
+//                            if (dep == null) {
+//                                Ref cellRef = new RefImpl(r, c);
+//                                if (sheetData.getCellContent(cellRef) == null) {
+//                                    sheetData.addContent(cellRef,
+//                                            CellContent.getNullCellContent());
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//                return areaRef;
+//            } else if (token instanceof RefPtg) {
+//                RefPtg ptg = (RefPtg) token;
+//                int row = ptg.getRow();
+//                int col = ptg.getColumn();
+//                Cell dep = this.getCellAt(sheet, row, col);
+//                if (dep == null) {
+//                    sheetData.addContent(new RefImpl(row, col),
+//                            CellContent.getNullCellContent());
+//                }
+//                return new RefImpl(row, col, row, col);
+//            } else if (token instanceof Area3DPtg ||
+//                    token instanceof Area3DPxg ||
+//                    token instanceof Ref3DPtg ||
+//                    token instanceof Ref3DPxg) {
+//                throw new SheetNotSupportedException();
+//            }
+//        }
+//
+//        return null;
+//    }
 
     private Sheet getDependentSheet(Cell src, OperandPtg opPtg) throws SheetNotSupportedException {
         Sheet sheet = null;
